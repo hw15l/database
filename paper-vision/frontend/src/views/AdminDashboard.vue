@@ -12,14 +12,11 @@
               <el-table-column prop="nickname" label="昵称" />
               <el-table-column label="状态" width="100"><template #default="s"><el-tag :type="s.row.status===1?'success':'danger'">{{ s.row.status===1?'正常':'禁用' }}</el-tag></template></el-table-column>
               <el-table-column label="操作" width="120">
-                <template #default="s">
-                  <el-button size="small" :type="s.row.status===1?'danger':'success'" @click="toggle(s.row)">{{ s.row.status===1?'禁用':'启用' }}</el-button>
-                </template>
+                <template #default="s"><el-button size="small" :type="s.row.status===1?'danger':'success'" @click="toggle(s.row)">{{ s.row.status===1?'禁用':'启用' }}</el-button></template>
               </el-table-column>
             </el-table>
           </el-tab-pane>
-          <el-tab-pane label="统计">
-            <h4>用户任务排行</h4>
+          <el-tab-pane label="统计排行">
             <el-table :data="ranking" stripe size="small">
               <el-table-column prop="username" label="用户名" />
               <el-table-column prop="nickname" label="昵称" />
@@ -38,8 +35,17 @@ export default {
   data() { return { stats: {}, users: [], ranking: [] } },
   async mounted() { await this.loadData() },
   methods: {
-    async loadData() { const [s, u, r] = await Promise.all([adminApi.stats(), adminApi.users(), adminApi.ranking(10)]); this.stats = s.data; this.users = u.data; this.ranking = r.data.top || [] },
-    async toggle(row) { await adminApi.toggleUser(row.id, row.status === 1 ? 0 : 1); this.$message.success('状态已更新'); this.loadData() }
+    async loadData() {
+      const [stats, users, ranking] = await Promise.all([adminApi.stats(), adminApi.users(), adminApi.ranking(10)])
+      this.stats = stats || {}
+      this.users = users || []
+      this.ranking = (ranking && ranking.top) || []
+    },
+    async toggle(row) {
+      await adminApi.toggleUser(row.id, row.status === 1 ? 0 : 1)
+      this.$message.success('状态已更新')
+      await this.loadData()
+    }
   }
 }
 </script>

@@ -23,8 +23,8 @@ export default {
       this.loading = true
       try {
         const res = await auth.register(this.form)
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('username', res.data.user.username)
+        localStorage.setItem('token', res.token)
+        localStorage.setItem('username', res.user.username)
         this.$router.push('/data')
         this.$message.success('注册成功')
       } catch (e) { this.$message.error('注册失败: ' + e.message); }

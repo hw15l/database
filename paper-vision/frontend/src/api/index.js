@@ -10,17 +10,13 @@ api.interceptors.request.use(config => {
 
 api.interceptors.response.use(
   res => {
+    if (res.config.responseType === 'blob') return res.data
     const body = res.data
     if (body && typeof body === 'object' && typeof body.code === 'number') {
-      if (body.code === 200) {
-        res.data = body.data
-        return res
-      }
-      const err = new Error(body.message || '请求失败')
-      err.code = body.code
-      return Promise.reject(err)
+      if (body.code === 200) return body.data
+      return Promise.reject(new Error(body.message || '请求失败'))
     }
-    return res
+    return body
   },
   err => {
     if (err.response?.status === 401 || err.response?.status === 403) {

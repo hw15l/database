@@ -21,8 +21,8 @@ export default {
       this.loading = true
       try {
         const res = await auth.login(this.form)
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('username', res.data.user.username)
+        localStorage.setItem('token', res.token)
+        localStorage.setItem('username', res.user.username)
         this.$router.push('/data')
         this.$message.success('登录成功')
       } catch (e) { this.$message.error('登录失败: ' + e.message); }
