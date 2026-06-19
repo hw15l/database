@@ -27,7 +27,7 @@ export default {
         localStorage.setItem('username', res.data.user.username)
         this.$router.push('/data')
         this.$message.success('注册成功')
-      } catch (e) { this.$message.error('注册失败: ' + (e.response?.data?.message || e.response?.status || e.message || '请确认后端已启动')); }
+      } catch (e) { this.$message.error('注册失败: ' + e.message); }
       this.loading = false
     }
   }

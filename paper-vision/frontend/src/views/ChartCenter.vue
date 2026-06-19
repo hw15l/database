@@ -97,7 +97,7 @@ export default {
         const ok = this.results.filter(x => x.status === 'SUCCESS').length
         this.$message.success(`完成：${ok}/${this.results.length} 个图表生成成功`)
       } catch (e) {
-        this.$message.error('生成失败: ' + (e.response?.data?.message || e.message))
+        this.$message.error('生成失败: ' + e.message)
       }
       this.generating = false
     },

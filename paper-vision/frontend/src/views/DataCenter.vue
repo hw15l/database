@@ -139,7 +139,7 @@ export default {
         await dataApi.upload(file.name, base64)
         this.$message.success('上传成功：'+file.name)
         await this.loadFiles()
-      } catch(e) { this.$message.error('上传失败：'+(e.response?.data?.message||e.message)) }
+      } catch(e) { this.$message.error('上传失败：'+e.message) }
     },
     showFormatHelp() { this.helpVisible = true },
     async preview(row) {
