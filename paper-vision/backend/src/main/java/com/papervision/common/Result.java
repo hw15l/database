@@ -3,6 +3,18 @@ package com.papervision.common;
 import lombok.Data;
 import java.io.Serializable;
 
+/**
+ * 统一API响应封装类
+ * <p>所有Controller接口统一返回此对象, 保证前后端数据格式一致</p>
+ * <ul>
+ *   <li>code: HTTP状态码(200成功, 400业务错误, 422校验失败, 500系统错误)</li>
+ *   <li>message: 提示信息</li>
+ *   <li>data: 业务数据(泛型)</li>
+ *   <li>timestamp: 响应时间戳(毫秒)</li>
+ * </ul>
+ *
+ * @param <T> 业务数据类型
+ */
 @Data
 public class Result<T> implements Serializable {
     private int code;

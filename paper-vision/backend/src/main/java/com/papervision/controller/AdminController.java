@@ -1,5 +1,6 @@
 package com.papervision.controller;
 
+import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.entity.User;
 import com.papervision.mapper.UserMapper;
@@ -38,7 +39,9 @@ public class AdminController {
     @PutMapping("/users/{id}/status")
     public Result<Void> toggleUser(@PathVariable Long id, @RequestParam Integer status) {
         User user = userMapper.selectById(id);
-        if (user != null) { user.setStatus(status); userMapper.updateById(user); }
+        if (user == null) throw new BusinessException("用户不存在");
+        user.setStatus(status);
+        userMapper.updateById(user);
         return Result.ok();
     }
 

@@ -85,7 +85,7 @@ public class ChartServiceImpl implements ChartService {
                 databaseMapper.callTaskStateTransition(task.getId(), "SUCCESS", null);
                 log.info("图表任务[{}]渲染成功", task.getId());
             } else {
-                throw new RuntimeException("Python服务渲染失败");
+                throw new BusinessException("Python服务渲染失败");
             }
         } catch (Exception e) {
             log.warn("图表任务[{}]渲染失败: {}", task.getId(), e.getMessage());

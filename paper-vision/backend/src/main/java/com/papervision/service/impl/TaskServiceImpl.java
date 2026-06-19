@@ -8,6 +8,7 @@ import com.papervision.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
 import java.io.*;
 import java.nio.file.Files;
@@ -49,6 +50,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
     public void deleteHistory(Long historyId, Long userId) {
         History h = historyMapper.selectById(historyId);
         if (h == null || !h.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");

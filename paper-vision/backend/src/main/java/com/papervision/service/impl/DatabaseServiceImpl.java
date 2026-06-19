@@ -11,9 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 数据库增强服务实现 — 存储过程调用 + 高级视图查询
+ * <p>类级别默认readOnly事务, 写方法单独标注@Transactional覆盖</p>
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class DatabaseServiceImpl implements DatabaseService {
     private final DatabaseMapper databaseMapper;
 

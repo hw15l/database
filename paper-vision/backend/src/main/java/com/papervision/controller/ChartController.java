@@ -1,7 +1,7 @@
 package com.papervision.controller;
 
-import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
+import com.papervision.dto.BatchChartTaskDTO;
 import com.papervision.dto.CreateChartTaskDTO;
 import com.papervision.entity.Chart;
 import com.papervision.entity.Task;
@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/chart")
@@ -40,18 +39,11 @@ public class ChartController {
     }
 
     @PostMapping("/generate-batch")
-    public Result<List<Task>> generateBatch(@RequestBody Map<String, Object> req) {
-        Object idsObj = req.get("chartIds");
-        if (!(idsObj instanceof List)) throw new BusinessException("chartIds (array) is required");
-        List<?> rawIds = (List<?>) idsObj;
-        if (rawIds.isEmpty()) throw new BusinessException("请至少选择一种图表");
-        Long fileId = req.get("fileId") != null ? Long.valueOf(req.get("fileId").toString()) : null;
-        Map<String, Object> params = (Map<String, Object>) req.get("params");
+    public Result<List<Task>> generateBatch(@Valid @RequestBody BatchChartTaskDTO dto) {
         Long userId = uid();
         List<Task> tasks = new ArrayList<>();
-        for (Object idObj : rawIds) {
-            Long chartId = Long.valueOf(idObj.toString());
-            tasks.add(chartService.createChartTask(userId, chartId, fileId, params));
+        for (Long chartId : dto.getChartIds()) {
+            tasks.add(chartService.createChartTask(userId, chartId, dto.getFileId(), dto.getParams()));
         }
         return Result.ok(tasks);
     }
