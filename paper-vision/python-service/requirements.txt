@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pandas
+openpyxl
+matplotlib
+seaborn
+numpy
+sympy
+pillow
+plotly
+wordcloud
+squarify
+pyecharts
+scipy

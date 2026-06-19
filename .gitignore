@@ -1,0 +1,11 @@
+node_modules/
+.idea/
+__pycache__/
+*.pyc
+*.class
+*.jar
+*.jar.original
+paper-vision/python-service/output/
+paper-vision/backend/target/
+paper-vision/backend/uploads/
+.running.pids
