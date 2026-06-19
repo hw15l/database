@@ -29,16 +29,16 @@ public class TaskController {
     @GetMapping("/{taskId}")
     public Result<Task> getTask(@PathVariable Long taskId) {
         Task task = taskService.getTask(taskId);
-        if (task == null || !task.getUserId().equals(uid()))
-            throw new BusinessException(403, "无权访问该任务");
+        if (task == null) throw new BusinessException(404, "任务不存在");
+        if (!task.getUserId().equals(uid())) throw new BusinessException(403, "无权访问该任务");
         return Result.ok(task);
     }
 
     @GetMapping("/{taskId}/image")
     public ResponseEntity<byte[]> getImage(@PathVariable Long taskId) {
         Task task = taskService.getTask(taskId);
-        if (task == null || !task.getUserId().equals(uid()))
-            throw new BusinessException(403, "无权访问该任务");
+        if (task == null) throw new BusinessException(404, "任务不存在");
+        if (!task.getUserId().equals(uid())) throw new BusinessException(403, "无权访问该任务");
         byte[] data = taskService.getResultImage(taskId);
         if (data == null) throw new BusinessException(404, "结果图片不存在");
         HttpHeaders headers = new HttpHeaders();

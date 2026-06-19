@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { ElMessage } from 'element-plus'
 
 const api = axios.create({ baseURL: '/api', timeout: 30000 })
 
@@ -14,6 +15,7 @@ api.interceptors.response.use(
     const body = res.data
     if (body && typeof body === 'object' && typeof body.code === 'number') {
       if (body.code === 200) return body.data
+      ElMessage.error(body.message || '请求失败')
       return Promise.reject(new Error(body.message || '请求失败'))
     }
     return body
@@ -21,8 +23,10 @@ api.interceptors.response.use(
   err => {
     if (err.response?.status === 401 || err.response?.status === 403) {
       localStorage.clear(); window.location.href = '/login'
+      return Promise.reject(err)
     }
     const msg = err.response?.data?.message || err.message || '网络错误'
+    ElMessage.error(msg)
     return Promise.reject(new Error(msg))
   }
 )

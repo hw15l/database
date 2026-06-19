@@ -137,7 +137,8 @@ public class FileServiceImpl implements FileService {
     @Transactional
     public void delete(Long fileId, Long userId) {
         FileEntity f = fileMapper.selectById(fileId);
-        if (f == null || !f.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
+        if (f == null) throw new BusinessException(404, "文件不存在");
+        if (!f.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
         f.setStatus(0); fileMapper.updateById(f);
         FileUtil.del(f.getFilePath());
         log.info("用户[{}]删除文件: fileId={}", userId, fileId);

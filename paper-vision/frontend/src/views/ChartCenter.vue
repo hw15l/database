@@ -88,7 +88,7 @@ export default {
           this.results.push(item)
         }
         this.$message.success(`完成：${this.results.filter(x => x.status === 'SUCCESS').length}/${this.results.length} 个图表生成成功`)
-      } catch (e) { this.$message.error('生成失败: ' + e.message) }
+      } catch (e) { /* 拦截器已统一提示 */ }
       this.generating = false
     },
     zoom(r) { this.zoomImage = r.image; this.showFull = true },

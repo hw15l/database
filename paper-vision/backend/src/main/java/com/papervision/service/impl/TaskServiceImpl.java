@@ -53,7 +53,8 @@ public class TaskServiceImpl implements TaskService {
     @Transactional
     public void deleteHistory(Long historyId, Long userId) {
         History h = historyMapper.selectById(historyId);
-        if (h == null || !h.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
+        if (h == null) throw new BusinessException(404, "记录不存在");
+        if (!h.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
         h.setIsDeleted(1);
         historyMapper.updateById(h);
         log.info("用户[{}]软删除历史记录: historyId={}", userId, historyId);

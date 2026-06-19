@@ -103,7 +103,7 @@ export default {
         await dataApi.upload(file.name, base64)
         this.$message.success('上传成功：' + file.name)
         await this.loadFiles()
-      } catch(e) { this.$message.error('上传失败：' + e.message) }
+      } catch(e) { /* 拦截器已统一提示 */ }
     },
     showFormatHelp() { this.helpVisible = true },
     async preview(row) {

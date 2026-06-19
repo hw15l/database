@@ -101,7 +101,7 @@ export default {
           this.resultImage = URL.createObjectURL(await taskApi.image(task.id))
         }
         this.$message.success('渲染完成')
-      } catch (e) { this.$message.error('渲染失败: ' + e.message) }
+      } catch (e) { /* 拦截器已统一提示 */ }
       this.generating = false
     },
     downloadAll() {
