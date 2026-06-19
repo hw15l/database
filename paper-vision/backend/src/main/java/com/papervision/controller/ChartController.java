@@ -1,11 +1,14 @@
 package com.papervision.controller;
 
+import com.papervision.common.BusinessException;
+import com.papervision.common.Result;
+import com.papervision.dto.CreateChartTaskDTO;
 import com.papervision.entity.Chart;
 import com.papervision.entity.Task;
 import com.papervision.service.ChartService;
 import com.papervision.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
@@ -22,28 +25,26 @@ public class ChartController {
         SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
 
     @GetMapping("/list")
-    public ResponseEntity<List<Chart>> list() { return ResponseEntity.ok(chartService.listCharts()); }
+    public Result<List<Chart>> list() {
+        return Result.ok(chartService.listCharts());
+    }
 
     @GetMapping("/category/{catId}")
-    public ResponseEntity<List<Chart>> listByCategory(@PathVariable Long catId) {
-        return ResponseEntity.ok(chartService.listByCategory(catId));
+    public Result<List<Chart>> listByCategory(@PathVariable Long catId) {
+        return Result.ok(chartService.listByCategory(catId));
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<Task> generate(@RequestBody Map<String, Object> req) {
-        Long chartId = req.get("chartId") != null ? Long.valueOf(req.get("chartId").toString()) : null;
-        if (chartId == null) throw new RuntimeException("chartId is required");
-        Long fileId = req.get("fileId") != null ? Long.valueOf(req.get("fileId").toString()) : null;
-        Map<String, Object> params = (Map<String, Object>) req.get("params");
-        return ResponseEntity.ok(chartService.createChartTask(uid(), chartId, fileId, params));
+    public Result<Task> generate(@Valid @RequestBody CreateChartTaskDTO dto) {
+        return Result.ok(chartService.createChartTask(uid(), dto.getChartId(), dto.getFileId(), dto.getParams()));
     }
 
     @PostMapping("/generate-batch")
-    public ResponseEntity<List<Task>> generateBatch(@RequestBody Map<String, Object> req) {
+    public Result<List<Task>> generateBatch(@RequestBody Map<String, Object> req) {
         Object idsObj = req.get("chartIds");
-        if (!(idsObj instanceof List)) throw new RuntimeException("chartIds (array) is required");
+        if (!(idsObj instanceof List)) throw new BusinessException("chartIds (array) is required");
         List<?> rawIds = (List<?>) idsObj;
-        if (rawIds.isEmpty()) throw new RuntimeException("请至少选择一种图表");
+        if (rawIds.isEmpty()) throw new BusinessException("请至少选择一种图表");
         Long fileId = req.get("fileId") != null ? Long.valueOf(req.get("fileId").toString()) : null;
         Map<String, Object> params = (Map<String, Object>) req.get("params");
         Long userId = uid();
@@ -52,6 +53,6 @@ public class ChartController {
             Long chartId = Long.valueOf(idObj.toString());
             tasks.add(chartService.createChartTask(userId, chartId, fileId, params));
         }
-        return ResponseEntity.ok(tasks);
+        return Result.ok(tasks);
     }
 }

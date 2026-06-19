@@ -2,6 +2,7 @@ package com.papervision.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.papervision.common.BusinessException;
 import com.papervision.entity.*;
 import com.papervision.mapper.*;
 import com.papervision.service.FormulaService;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 import java.util.*;
 
@@ -44,11 +46,13 @@ public class FormulaServiceImpl implements FormulaService {
     }
 
     @Override
+    @Transactional
     public Task createFormulaTask(Long userId, Long formulaId, String latex, Map<String, Object> params) {
         Formula formula = formulaMapper.selectById(formulaId);
-        if (formula == null) throw new RuntimeException("公式不存在");
+        if (formula == null) throw new BusinessException("公式不存在");
 
         databaseMapper.callQuotaCheck(userId, "ENFORCE");
+        log.info("用户[{}]创建公式任务: formulaId={}", userId, formulaId);
 
         Task task = new Task();
         task.setUserId(userId);
@@ -66,6 +70,7 @@ public class FormulaServiceImpl implements FormulaService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(req, headers);
+            log.info("调用Python渲染服务: formula_type={}", formula.getFormulaCode());
             ResponseEntity<Map> resp = restTemplate.postForEntity(
                     pythonServiceUrl + "/render/formula", entity, Map.class);
 
@@ -73,12 +78,13 @@ public class FormulaServiceImpl implements FormulaService {
                 taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                         .eq(Task::getId, task.getId())
                         .set(Task::getResultPath, (String) resp.getBody().get("image_path")));
-
                 databaseMapper.callTaskStateTransition(task.getId(), "SUCCESS", null);
+                log.info("公式任务[{}]渲染成功", task.getId());
             } else {
                 throw new RuntimeException("Python服务渲染失败");
             }
         } catch (Exception e) {
+            log.warn("公式任务[{}]渲染失败: {}", task.getId(), e.getMessage());
             databaseMapper.callTaskStateTransition(task.getId(), "FAILED", e.getMessage());
         }
         return taskMapper.selectById(task.getId());

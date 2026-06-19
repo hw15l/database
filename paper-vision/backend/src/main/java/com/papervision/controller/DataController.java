@@ -1,15 +1,16 @@
 package com.papervision.controller;
 
+import com.papervision.common.Result;
+import com.papervision.dto.FileUploadDTO;
 import com.papervision.entity.FileEntity;
 import com.papervision.service.FileService;
 import com.papervision.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/data")
@@ -21,28 +22,25 @@ public class DataController {
         SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
 
     @PostMapping("/upload")
-    public ResponseEntity<FileEntity> upload(@RequestBody Map<String, Object> req) throws Exception {
-        String fileName = (String) req.get("fileName");
-        String base64 = (String) req.get("fileData");
-        if (fileName == null || base64 == null) throw new RuntimeException("fileName and fileData required");
-        byte[] bytes = Base64.getDecoder().decode(base64);
-        return ResponseEntity.ok(fileService.uploadFromBytes(bytes, fileName, uid()));
+    public Result<FileEntity> upload(@Valid @RequestBody FileUploadDTO dto) throws Exception {
+        byte[] bytes = Base64.getDecoder().decode(dto.getFileData());
+        return Result.ok(fileService.uploadFromBytes(bytes, dto.getFileName(), uid()));
     }
 
     @GetMapping("/files")
-    public ResponseEntity<List<FileEntity>> listFiles() {
-        return ResponseEntity.ok(fileService.listByUser(uid()));
+    public Result<List<FileEntity>> listFiles() {
+        return Result.ok(fileService.listByUser(uid()));
     }
 
     @GetMapping("/preview/{fileId}")
-    public ResponseEntity<List<List<String>>> preview(@PathVariable Long fileId,
-                                                       @RequestParam(defaultValue = "20") int limit) {
-        return ResponseEntity.ok(fileService.previewData(fileId, uid(), limit));
+    public Result<List<List<String>>> preview(@PathVariable Long fileId,
+                                               @RequestParam(defaultValue = "20") int limit) {
+        return Result.ok(fileService.previewData(fileId, uid(), limit));
     }
 
     @DeleteMapping("/{fileId}")
-    public ResponseEntity<String> delete(@PathVariable Long fileId) {
+    public Result<Void> delete(@PathVariable Long fileId) {
         fileService.delete(fileId, uid());
-        return ResponseEntity.ok("OK");
+        return Result.ok();
     }
 }

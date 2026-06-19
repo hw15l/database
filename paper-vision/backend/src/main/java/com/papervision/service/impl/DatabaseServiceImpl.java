@@ -1,5 +1,6 @@
 package com.papervision.service.impl;
 
+import com.papervision.common.BusinessException;
 import com.papervision.mapper.DatabaseMapper;
 import com.papervision.service.DatabaseService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class DatabaseServiceImpl implements DatabaseService {
         } catch (Exception e) {
             log.warn("任务状态流转失败: taskId={}, {}→{}, reason={}",
                     taskId, "?", newStatus, e.getMessage());
-            throw new RuntimeException("状态流转失败: " + e.getMessage());
+            throw new BusinessException("状态流转失败: " + e.getMessage());
         }
     }
 
@@ -38,7 +39,7 @@ public class DatabaseServiceImpl implements DatabaseService {
         try {
             databaseMapper.callQuotaCheck(userId, "ENFORCE");
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+            throw new BusinessException(e.getMessage());
         }
     }
 
@@ -58,14 +59,14 @@ public class DatabaseServiceImpl implements DatabaseService {
     @Cacheable(value = "userProfile360", key = "#userId")
     public Map<String, Object> getUserProfile360(Long userId) {
         Map<String, Object> profile = databaseMapper.getUserProfile360(userId);
-        if (profile == null) throw new RuntimeException("用户不存在");
+        if (profile == null) throw new BusinessException("用户不存在");
         return profile;
     }
 
     @Override
     public Map<String, Object> getTaskDetailEnhanced(Long taskId) {
         Map<String, Object> detail = databaseMapper.getTaskDetailEnhanced(taskId);
-        if (detail == null) throw new RuntimeException("任务不存在");
+        if (detail == null) throw new BusinessException("任务不存在");
         return detail;
     }
 
