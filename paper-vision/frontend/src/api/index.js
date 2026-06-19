@@ -8,12 +8,28 @@ api.interceptors.request.use(config => {
   return config
 })
 
-api.interceptors.response.use(res => res, err => {
-  if (err.response?.status === 401 || err.response?.status === 403) {
-    localStorage.clear(); window.location.href = '/login'
+api.interceptors.response.use(
+  res => {
+    const body = res.data
+    if (body && typeof body === 'object' && typeof body.code === 'number') {
+      if (body.code === 200) {
+        res.data = body.data
+        return res
+      }
+      const err = new Error(body.message || '请求失败')
+      err.code = body.code
+      return Promise.reject(err)
+    }
+    return res
+  },
+  err => {
+    if (err.response?.status === 401 || err.response?.status === 403) {
+      localStorage.clear(); window.location.href = '/login'
+    }
+    const msg = err.response?.data?.message || err.message || '网络错误'
+    return Promise.reject(new Error(msg))
   }
-  return Promise.reject(err)
-})
+)
 
 export const auth = { login: d => api.post('/auth/login', d), register: d => api.post('/auth/register', d) }
 export const user = { me: () => api.get('/user/me'), update: d => api.put('/user/profile', d), changePwd: d => api.put('/user/password', d) }
