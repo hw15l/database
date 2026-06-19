@@ -20,4 +20,10 @@ public class User {
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
+
+    private String profile;
+    private Integer loginCount;
+    private String lastLoginIp;
+    private Integer accountAgeDays;
+    private Integer isActive;
 }

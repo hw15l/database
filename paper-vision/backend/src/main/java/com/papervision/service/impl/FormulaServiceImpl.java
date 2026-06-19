@@ -1,24 +1,26 @@
 package com.papervision.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.papervision.entity.*;
 import com.papervision.mapper.*;
 import com.papervision.service.FormulaService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import java.time.LocalDateTime;
 import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FormulaServiceImpl implements FormulaService {
     private final FormulaMapper formulaMapper;
     private final TaskMapper taskMapper;
-    private final HistoryMapper historyMapper;
+    private final DatabaseMapper databaseMapper;
     private final RestTemplate restTemplate;
 
     @Value("${python.service.url}")
@@ -46,11 +48,15 @@ public class FormulaServiceImpl implements FormulaService {
         Formula formula = formulaMapper.selectById(formulaId);
         if (formula == null) throw new RuntimeException("公式不存在");
 
+        databaseMapper.callQuotaCheck(userId, "ENFORCE");
+
         Task task = new Task();
-        task.setUserId(userId); task.setTaskType("formula");
-        task.setFormulaId(formulaId); task.setStatus("PROCESSING");
-        task.setStartTime(LocalDateTime.now());
+        task.setUserId(userId);
+        task.setTaskType("formula");
+        task.setFormulaId(formulaId);
         taskMapper.insert(task);
+
+        databaseMapper.callTaskStateTransition(task.getId(), "PROCESSING", null);
 
         try {
             Map<String, Object> req = new HashMap<>();
@@ -64,22 +70,17 @@ public class FormulaServiceImpl implements FormulaService {
                     pythonServiceUrl + "/render/formula", entity, Map.class);
 
             if (resp.getBody() != null && "success".equals(resp.getBody().get("status"))) {
-                task.setResultPath((String) resp.getBody().get("image_path"));
-                task.setStatus("SUCCESS"); task.setFinishTime(LocalDateTime.now());
-                taskMapper.updateById(task);
+                taskMapper.update(null, new LambdaUpdateWrapper<Task>()
+                        .eq(Task::getId, task.getId())
+                        .set(Task::getResultPath, (String) resp.getBody().get("image_path")));
 
-                History history = new History();
-                history.setUserId(userId); history.setTaskId(task.getId());
-                history.setTaskType("formula"); history.setFormulaName(formula.getFormulaName());
-                history.setResultImage(task.getResultPath());
-                historyMapper.insert(history);
+                databaseMapper.callTaskStateTransition(task.getId(), "SUCCESS", null);
             } else {
                 throw new RuntimeException("Python服务渲染失败");
             }
         } catch (Exception e) {
-            task.setStatus("FAILED"); task.setErrorMsg(e.getMessage());
-            taskMapper.updateById(task);
+            databaseMapper.callTaskStateTransition(task.getId(), "FAILED", e.getMessage());
         }
-        return task;
+        return taskMapper.selectById(task.getId());
     }
 }

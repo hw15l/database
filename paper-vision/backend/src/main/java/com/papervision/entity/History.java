@@ -18,4 +18,11 @@ public class History {
     private Integer isDeleted;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    private Integer rating;
+    private String tags;
+    private String snapshot;
+    private Integer isFavorite;
+    private LocalDateTime deletedAt;
+    private Integer viewCount;
 }

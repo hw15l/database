@@ -19,4 +19,13 @@ public class Formula {
     private Integer sortOrder;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    private Integer complexityLevel;
+    private String tags;
+    private String version;
+    private String previewImage;
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private Integer latexLength;
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private String popularityRank;
 }

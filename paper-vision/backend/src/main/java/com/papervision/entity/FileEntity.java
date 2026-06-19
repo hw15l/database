@@ -2,6 +2,7 @@ package com.papervision.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,4 +20,13 @@ public class FileEntity {
     private Integer status;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    private String fileHash;
+    private String metadata;
+    private String dataProfile;
+    private String uploadIp;
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private BigDecimal fileSizeMb;
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private Integer cellCount;
 }

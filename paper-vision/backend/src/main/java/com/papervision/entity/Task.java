@@ -24,4 +24,12 @@ public class Task {
     private LocalDateTime finishTime;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
+
+    private Integer priority;
+    private Integer retryCount;
+    private String renderEngine;
+    private String executionLog;
+    private String clientIp;
+    @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
+    private Integer durationSeconds;
 }

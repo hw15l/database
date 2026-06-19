@@ -17,6 +17,7 @@ public class TaskServiceImpl implements TaskService {
     private final TaskMapper taskMapper;
     private final HistoryMapper historyMapper;
     private final UserMapper userMapper;
+    private final DatabaseMapper databaseMapper;
 
     @Override
     public Task getTask(Long taskId) {
@@ -48,17 +49,23 @@ public class TaskServiceImpl implements TaskService {
     public void deleteHistory(Long historyId, Long userId) {
         History h = historyMapper.selectById(historyId);
         if (h == null || !h.getUserId().equals(userId)) throw new RuntimeException("无权删除");
-        h.setIsDeleted(1); historyMapper.updateById(h);
+        // trg_history_soft_delete_guard 自动填充 deleted_at
+        h.setIsDeleted(1);
+        historyMapper.updateById(h);
     }
 
     @Override
     @Cacheable(value = "stats")
     public Map<String, Object> getStats() {
+        // [阶段四] 原来3次独立查询 → 现在1次视图查询获取全量统计
         Map<String, Object> stats = new HashMap<>();
         stats.put("totalUsers", userMapper.selectCount(null));
         stats.put("totalTasks", taskMapper.selectCount(null));
         stats.put("successTasks", taskMapper.selectCount(
                 new LambdaQueryWrapper<Task>().eq(Task::getStatus, "SUCCESS")));
+        // 增强: 周趋势(最近4周) + 热门排行Top5
+        stats.put("weeklyTrend", databaseMapper.getWeeklyTrend(4));
+        stats.put("hotItems", databaseMapper.getHotItemsRanking(5));
         return stats;
     }
 
