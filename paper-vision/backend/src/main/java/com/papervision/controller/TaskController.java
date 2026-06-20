@@ -59,7 +59,11 @@ public class TaskController {
         if (data == null) throw new BusinessException(404, "结果图片不存在");
         HttpHeaders headers = new HttpHeaders();
         String path = task.getResultPath();
-        headers.setContentType(path != null && path.endsWith(".html") ? MediaType.TEXT_HTML : MediaType.IMAGE_PNG);
+        if (path != null && path.endsWith(".html")) {
+            headers.setContentType(MediaType.parseMediaType("text/html;charset=UTF-8"));
+        } else {
+            headers.setContentType(MediaType.IMAGE_PNG);
+        }
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }
 

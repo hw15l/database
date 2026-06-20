@@ -98,8 +98,20 @@ export default {
     zoom(r) { this.zoomImage = r.image; this.showFull = true },
     download(r) { const a = document.createElement('a'); a.href = r.image; a.download = r.name + '.png'; a.click() },
     async openHtml(r) {
-      const blob = await taskApi.image(r.htmlTaskId)
-      window.open(URL.createObjectURL(blob), '_blank')
+      const w = window.open('', '_blank')
+      if (!w) { this.$message.error('请允许浏览器弹窗'); return }
+      w.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;color:#666"><p>加载交互式图表中...</p></body></html>')
+      try {
+        const blob = await taskApi.image(r.htmlTaskId)
+        const html = await blob.text()
+        w.document.open()
+        w.document.write(html)
+        w.document.close()
+      } catch (e) {
+        w.document.open()
+        w.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:sans-serif;color:red"><p>加载失败，请重试</p></body></html>')
+        w.document.close()
+      }
     }
   }
 }
