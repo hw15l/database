@@ -69,6 +69,14 @@ public class AdminController {
     @GetMapping("/activity")
     public Result<List<Map<String, Object>>> activityAudit(
             @RequestParam Long userId, @RequestParam(defaultValue = "50") int limit) {
+        if (userId == null || userId <= 0) throw new BusinessException("userId无效");
         return Result.ok(databaseService.getUserActivityAudit(userId, limit));
+    }
+
+    /** 手动刷新热门 — [DB] sp_hot_items_refresh: 绝对阈值+近期热度双维度 */
+    @PostMapping("/refresh-hot")
+    public Result<Void> refreshHotItems() {
+        databaseService.refreshHotItems();
+        return Result.ok(null, "热门数据已刷新");
     }
 }

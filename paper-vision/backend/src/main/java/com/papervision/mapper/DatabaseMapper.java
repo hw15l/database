@@ -63,7 +63,9 @@ public interface DatabaseMapper {
     Map<String, Object> getDataQuality(@Param("fileId") Long fileId);
 
     /** v_hot_items_unified_ranking: 图表/公式统一排行(UNION ALL+DENSE_RANK双排名) */
-    @Select("SELECT * FROM v_hot_items_unified_ranking ORDER BY global_rank LIMIT #{limit}")
+    @Select("SELECT item_type, item_id, item_name, item_code, usage_count, " +
+            "popularity_rank, complexity_level, is_hot, category_name, global_rank, type_rank " +
+            "FROM v_hot_items_unified_ranking ORDER BY global_rank LIMIT #{limit}")
     List<Map<String, Object>> getHotItemsRanking(@Param("limit") Integer limit);
 
     /** v_trend_analysis_weekly: 周趋势(YEARWEEK聚合+LAG环比+SUM OVER累计) */
