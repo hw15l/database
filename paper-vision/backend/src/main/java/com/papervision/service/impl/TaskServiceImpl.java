@@ -90,6 +90,7 @@ public class TaskServiceImpl implements TaskService {
      * <p>[DB] v_user_profile_360: 6表JOIN + RANK()窗口函数 + 用户分层</p>
      */
     @Override
+    @Cacheable(value = "ranking", key = "#topN")
     public Map<String, Object> getUserRanking(int topN) {
         Map<String, Object> result = new HashMap<>();
         // [DB] v_user_profile_360 视图: 窗口函数RANK()排名, 替代手写JOIN+GROUP BY

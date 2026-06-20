@@ -1,8 +1,10 @@
 package com.papervision.controller;
 
+import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.dto.FileUploadDTO;
 import com.papervision.entity.FileEntity;
+import com.papervision.mapper.FileMapper;
 import com.papervision.service.DatabaseService;
 import com.papervision.service.FileService;
 import com.papervision.service.UserService;
@@ -21,6 +23,7 @@ public class DataController {
     private final FileService fileService;
     private final UserService userService;
     private final DatabaseService databaseService;
+    private final FileMapper fileMapper;
     private Long uid() { return userService.getCurrentUser(
         SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
 
@@ -50,6 +53,9 @@ public class DataController {
     /** 数据质量审计 — [DB] sp_data_quality_audit: 逐列分析 + 质量评分 + 回写data_profile */
     @PostMapping("/{fileId}/audit")
     public Result<Map<String, Object>> auditQuality(@PathVariable Long fileId) {
+        FileEntity f = fileMapper.selectById(fileId);
+        if (f == null) throw new BusinessException(404, "文件不存在");
+        if (!f.getUserId().equals(uid())) throw new BusinessException(403, "无权操作该文件");
         databaseService.runDataQualityAudit(fileId);
         return Result.ok(databaseService.getDataQualityDashboard(fileId));
     }

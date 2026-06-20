@@ -40,6 +40,9 @@ public class TaskController {
     /** 任务详情增强 — [DB] v_task_detail_enhanced视图(6表JOIN+窗口函数+闭包表路径) */
     @GetMapping("/{taskId}/detail")
     public Result<Map<String, Object>> getTaskDetail(@PathVariable Long taskId) {
+        Task task = taskService.getTask(taskId);
+        if (task == null) throw new BusinessException(404, "任务不存在");
+        if (!task.getUserId().equals(uid())) throw new BusinessException(403, "无权访问该任务");
         return Result.ok(databaseService.getTaskDetailEnhanced(taskId));
     }
 
