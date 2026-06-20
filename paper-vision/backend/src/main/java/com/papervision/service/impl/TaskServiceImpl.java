@@ -74,13 +74,20 @@ public class TaskServiceImpl implements TaskService {
     @Cacheable(value = "stats")
     public Map<String, Object> getStats() {
         Map<String, Object> stats = new HashMap<>();
-        stats.put("totalUsers", userMapper.selectCount(null));
-        stats.put("totalTasks", taskMapper.selectCount(null));
-        stats.put("successTasks", taskMapper.selectCount(
-                new LambdaQueryWrapper<Task>().eq(Task::getStatus, "SUCCESS")));
-        // [DB] 视图 v_trend_analysis_weekly: 窗口函数计算周环比增长率
+        long totalUsers = userMapper.selectCount(null);
+        long totalTasks = taskMapper.selectCount(null);
+        long successTasks = taskMapper.selectCount(
+                new LambdaQueryWrapper<Task>().eq(Task::getStatus, "SUCCESS"));
+        long todayTasks = taskMapper.selectCount(
+                new LambdaQueryWrapper<Task>().apply("DATE(create_time) = CURDATE()"));
+        stats.put("totalUsers", totalUsers);
+        stats.put("totalTasks", totalTasks);
+        stats.put("successTasks", successTasks);
+        stats.put("successRate", totalTasks > 0 ? Math.round(successTasks * 1000.0 / totalTasks) / 10.0 : 0);
+        stats.put("todayTasks", todayTasks);
+        stats.put("avgTasksPerUser", totalUsers > 0 ? Math.round(totalTasks * 10.0 / totalUsers) / 10.0 : 0);
+        // [DB] 视图 v_trend_analysis_weekly + v_hot_items_unified_ranking
         stats.put("weeklyTrend", databaseMapper.getWeeklyTrend(4));
-        // [DB] 视图 v_hot_items_unified_ranking: 图表/公式统一热度排行
         stats.put("hotItems", databaseMapper.getHotItemsRanking(5));
         return stats;
     }

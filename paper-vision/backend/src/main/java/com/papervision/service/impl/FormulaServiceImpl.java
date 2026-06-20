@@ -9,7 +9,7 @@ import com.papervision.service.FormulaService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.*;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -147,6 +147,7 @@ public class FormulaServiceImpl implements FormulaService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend"}, allEntries = true)
     public Task createFormulaTask(Long userId, Long formulaId, String latex, Map<String, Object> params) {
         Formula formula = formulaMapper.selectById(formulaId);
         if (formula == null) throw new BusinessException("公式不存在");

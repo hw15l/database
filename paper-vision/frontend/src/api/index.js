@@ -40,4 +40,4 @@ export const dataApi = {
 export const chartApi = { list: () => api.get('/chart/list'), byCat: id => api.get(`/chart/category/${id}`), generate: d => api.post('/chart/generate', d), generateBatch: d => api.post('/chart/generate-batch', d) }
 export const formulaApi = { list: () => api.get('/formula/list'), byCat: id => api.get(`/formula/category/${id}`), generate: d => api.post('/formula/generate', d) }
 export const taskApi = { list: () => api.get('/task/list'), get: id => api.get(`/task/${id}`), image: id => api.get(`/task/${id}/image`, { responseType: 'blob' }), history: () => api.get('/task/history'), delHistory: id => api.delete(`/task/history/${id}`) }
-export const adminApi = { stats: () => api.get('/admin/stats'), ranking: n => api.get(`/admin/ranking?topN=${n}`), users: () => api.get('/admin/users'), toggleUser: (id, s) => api.put(`/admin/users/${id}/status?status=${s}`) }
+export const adminApi = { stats: () => api.get('/admin/stats'), ranking: n => api.get(`/admin/ranking?topN=${n}`), users: () => api.get('/admin/users'), toggleUser: (id, s) => api.put(`/admin/users/${id}/status?status=${s}`), refreshAll: () => api.post('/admin/refresh-all') }

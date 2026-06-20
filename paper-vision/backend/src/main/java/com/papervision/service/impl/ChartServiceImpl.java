@@ -9,7 +9,7 @@ import com.papervision.service.ChartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.*;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,6 +62,7 @@ public class ChartServiceImpl implements ChartService {
      */
     @Override
     @Transactional
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend"}, allEntries = true)
     public Task createChartTask(Long userId, Long chartId, Long fileId, Map<String, Object> params) {
         Chart chart = chartMapper.selectById(chartId);
         if (chart == null) throw new BusinessException("图表不存在");

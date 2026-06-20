@@ -5,7 +5,7 @@ import com.papervision.mapper.DatabaseMapper;
 import com.papervision.service.DatabaseService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -116,5 +116,13 @@ public class DatabaseServiceImpl implements DatabaseService {
     public void refreshHotItems() {
         databaseMapper.callHotItemsRefresh(10, 7);
         log.info("热点数据刷新完成");
+    }
+
+    @Override
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360"}, allEntries = true)
+    @Transactional
+    public void refreshAllStats() {
+        databaseMapper.callHotItemsRefresh(10, 7);
+        log.info("全部统计缓存已清除, 热点数据已刷新");
     }
 }

@@ -58,4 +58,7 @@ public interface DatabaseService {
 
     /** 手动刷新热点数据(调用sp_hot_items_refresh) */
     void refreshHotItems();
+
+    /** 刷新全部统计缓存 + 热点数据 — 管理员手动触发 */
+    void refreshAllStats();
 }
