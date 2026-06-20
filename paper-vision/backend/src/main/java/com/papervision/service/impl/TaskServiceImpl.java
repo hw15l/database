@@ -88,8 +88,22 @@ public class TaskServiceImpl implements TaskService {
     @Cacheable(value = "ranking", key = "#topN")
     public Map<String, Object> getUserRanking(int topN) {
         log.info("加载用户排行(缓存未命中): topN={}", topN);
+        List<Map<String, Object>> users = databaseMapper.getUserRankingFromView(topN);
+        users.sort((a, b) -> {
+            double scoreA = numVal(a, "totalTasks") + numVal(a, "successRatePct") * 0.3;
+            double scoreB = numVal(b, "totalTasks") + numVal(b, "successRatePct") * 0.3;
+            return Double.compare(scoreB, scoreA);
+        });
+        for (int i = 0; i < users.size(); i++) {
+            users.get(i).put("taskCountRank", i + 1);
+        }
         Map<String, Object> result = new HashMap<>();
-        result.put("top", databaseMapper.getUserRankingFromView(topN));
+        result.put("top", users);
         return result;
+    }
+
+    private static double numVal(Map<String, Object> m, String key) {
+        Object v = m.get(key);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0;
     }
 }

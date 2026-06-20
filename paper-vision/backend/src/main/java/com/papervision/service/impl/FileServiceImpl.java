@@ -11,6 +11,7 @@ import com.papervision.service.FileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "userProfile360", allEntries = true)
     public FileEntity uploadFromBytes(byte[] bytes, String originalName, Long userId) throws Exception {
         if (bytes.length > MAX_FILE_SIZE) {
             throw new BusinessException("文件大小不能超过50MB");
@@ -57,6 +59,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "userProfile360", allEntries = true)
     public FileEntity upload(MultipartFile mf, Long userId) throws Exception {
         String originalName = Objects.requireNonNull(mf.getOriginalFilename());
         String ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
@@ -157,6 +160,7 @@ public class FileServiceImpl implements FileService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "userProfile360", allEntries = true)
     public void delete(Long fileId, Long userId) {
         FileEntity f = fileMapper.selectById(fileId);
         if (f == null) throw new BusinessException(404, "文件不存在");

@@ -48,12 +48,15 @@ public interface DatabaseMapper {
     @Select("SELECT * FROM v_user_profile_360 WHERE user_id = #{userId}")
     Map<String, Object> getUserProfile360(@Param("userId") Long userId);
 
-    /** v_user_profile_360: 用户排行(窗口函数RANK排名, 替代手写JOIN+GROUP BY) */
+    /** v_user_profile_360: 用户排行 — 按任务量+成功率复合排序, 排除零任务用户 */
     @Select("SELECT user_id AS userId, username, nickname, " +
             "total_tasks AS totalTasks, success_count AS successCount, " +
             "success_rate_pct AS successRatePct, user_tier AS userTier, " +
             "task_count_rank AS taskCountRank " +
-            "FROM v_user_profile_360 ORDER BY task_count_rank LIMIT #{topN}")
+            "FROM v_user_profile_360 " +
+            "WHERE total_tasks > 0 " +
+            "ORDER BY total_tasks DESC, success_rate_pct DESC, success_count DESC " +
+            "LIMIT #{topN}")
     List<Map<String, Object>> getUserRankingFromView(@Param("topN") int topN);
 
     /** v_task_detail_enhanced: 任务详情(6表JOIN+窗口函数ROW_NUMBER/LAG/RANK+闭包表路径) */
@@ -64,12 +67,14 @@ public interface DatabaseMapper {
     @Select("SELECT * FROM v_data_quality_dashboard WHERE file_id = #{fileId}")
     Map<String, Object> getDataQuality(@Param("fileId") Long fileId);
 
-    /** v_hot_items_unified_ranking: 图表/公式统一排行(UNION ALL+DENSE_RANK双排名) */
+    /** v_hot_items_unified_ranking: 图表/公式统一排行 — is_hot优先+usage_count+名称稳定排序 */
     @Select("SELECT item_type AS itemType, item_id AS itemId, item_name AS itemName, " +
             "item_code AS itemCode, usage_count AS usageCount, popularity_rank AS popularityRank, " +
             "complexity_level AS complexityLevel, is_hot AS isHot, category_name AS categoryName, " +
             "global_rank AS globalRank, type_rank AS typeRank " +
-            "FROM v_hot_items_unified_ranking ORDER BY global_rank LIMIT #{limit}")
+            "FROM v_hot_items_unified_ranking " +
+            "ORDER BY is_hot DESC, usage_count DESC, item_name ASC " +
+            "LIMIT #{limit}")
     List<Map<String, Object>> getHotItemsRanking(@Param("limit") Integer limit);
 
     /** v_trend_analysis_weekly: 周趋势(YEARWEEK聚合+LAG环比+SUM OVER累计) */

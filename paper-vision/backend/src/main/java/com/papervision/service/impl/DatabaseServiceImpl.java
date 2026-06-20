@@ -84,7 +84,21 @@ public class DatabaseServiceImpl implements DatabaseService {
     @Cacheable(value = "hotItems", key = "#limit")
     public List<Map<String, Object>> getHotItemsRanking(Integer limit) {
         if (limit == null || limit <= 0) limit = 20;
-        return databaseMapper.getHotItemsRanking(limit);
+        List<Map<String, Object>> items = databaseMapper.getHotItemsRanking(limit);
+        items.sort((a, b) -> {
+            int hotA = intVal(a, "isHot"), hotB = intVal(b, "isHot");
+            if (hotA != hotB) return Integer.compare(hotB, hotA);
+            return Integer.compare(intVal(b, "usageCount"), intVal(a, "usageCount"));
+        });
+        for (int i = 0; i < items.size(); i++) {
+            items.get(i).put("globalRank", i + 1);
+        }
+        return items;
+    }
+
+    private static int intVal(Map<String, Object> m, String key) {
+        Object v = m.get(key);
+        return v instanceof Number ? ((Number) v).intValue() : 0;
     }
 
     @Override
