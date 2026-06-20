@@ -93,7 +93,10 @@ export default {
     },
     zoom(r) { this.zoomImage = r.image; this.showFull = true },
     download(r) { const a = document.createElement('a'); a.href = r.image; a.download = r.name + '.png'; a.click() },
-    openHtml(r) { window.open('/api/task/' + r.htmlTaskId + '/image', '_blank') }
+    async openHtml(r) {
+      const blob = await taskApi.image(r.htmlTaskId)
+      window.open(URL.createObjectURL(blob), '_blank')
+    }
   }
 }
 </script>
