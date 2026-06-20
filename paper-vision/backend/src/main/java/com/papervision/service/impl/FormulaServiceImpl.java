@@ -147,10 +147,16 @@ public class FormulaServiceImpl implements FormulaService {
      */
     @Override
     @Transactional
-    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend"}, allEntries = true)
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360"}, allEntries = true)
     public Task createFormulaTask(Long userId, Long formulaId, String latex, Map<String, Object> params) {
         Formula formula = formulaMapper.selectById(formulaId);
         if (formula == null) throw new BusinessException("公式不存在");
+
+        if (latex != null && latex.length() > 2000) {
+            throw new BusinessException("LaTeX表达式长度不能超过2000字符");
+        }
+        if (params == null) params = new HashMap<>();
+        if (params.size() > 30) throw new BusinessException("参数数量超过限制");
 
         // [DB] sp_quota_check_and_enforce
         databaseMapper.callQuotaCheck(userId, "ENFORCE");

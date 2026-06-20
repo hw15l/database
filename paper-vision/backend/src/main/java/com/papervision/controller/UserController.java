@@ -1,5 +1,6 @@
 package com.papervision.controller;
 
+import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.dto.*;
 import com.papervision.entity.User;
@@ -19,11 +20,16 @@ public class UserController {
     private final UserService userService;
     private final DatabaseService databaseService;
     private String username() { return SecurityContextHolder.getContext().getAuthentication().getName(); }
-    private Long uid() { return userService.getCurrentUser(username()).getId(); }
+    private Long uid() {
+        User u = userService.getCurrentUser(username());
+        if (u == null) throw new BusinessException(401, "用户未登录或不存在");
+        return u.getId();
+    }
 
     @GetMapping("/me")
     public Result<User> me() {
         User user = userService.getCurrentUser(username());
+        if (user == null) throw new BusinessException(401, "用户未登录或不存在");
         user.setPassword(null);
         return Result.ok(user);
     }

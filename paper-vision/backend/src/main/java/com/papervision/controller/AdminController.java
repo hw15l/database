@@ -8,6 +8,7 @@ import com.papervision.mapper.UserMapper;
 import com.papervision.service.DatabaseService;
 import com.papervision.service.TaskService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -41,9 +42,11 @@ public class AdminController {
     }
 
     @PutMapping("/users/{id}/status")
+    @CacheEvict(value = {"user", "userProfile360", "ranking"}, allEntries = true)
     public Result<Void> toggleUser(@PathVariable Long id, @RequestParam Integer status) {
         User user = userMapper.selectById(id);
         if (user == null) throw new BusinessException("用户不存在");
+        if (status != 0 && status != 1) throw new BusinessException("状态值非法");
         user.setStatus(status);
         userMapper.updateById(user);
         return Result.ok();

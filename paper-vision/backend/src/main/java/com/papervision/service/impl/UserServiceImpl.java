@@ -92,23 +92,27 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"user", "userProfile360"}, allEntries = true)
     public void updateProfile(String username, UserUpdateDTO dto) {
         User user = getCurrentUser(username);
+        if (user == null) throw new BusinessException("用户不存在");
         if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getNickname() != null) user.setNickname(dto.getNickname());
         if (dto.getAvatar() != null) user.setAvatar(dto.getAvatar());
         userMapper.updateById(user);
-        log.info("用户更新资料: {}", username);
+        log.info("用户[{}]更新资料: nickname={}, email={}", username, dto.getNickname(), dto.getEmail());
     }
 
     @Override
     @Transactional
+    @CacheEvict(value = "user", allEntries = true)
     public void changePassword(String username, PasswordDTO dto) {
         User user = getCurrentUser(username);
+        if (user == null) throw new BusinessException("用户不存在");
         if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword()))
             throw new BusinessException("原密码错误");
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userMapper.updateById(user);
-        log.info("用户修改密码: {}", username);
+        log.info("用户[{}]修改密码", username);
     }
 }

@@ -81,6 +81,7 @@ def _resolve_params(user_params):
     base['format'] = 'png'
     if user_params:
         base.update({k: v for k, v in user_params.items() if v is not None})
+    base['dpi'] = min(max(int(base.get('dpi', 300)), 72), 600)
     return base
 
 

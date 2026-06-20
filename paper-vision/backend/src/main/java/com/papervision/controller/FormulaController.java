@@ -1,9 +1,11 @@
 package com.papervision.controller;
 
+import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.dto.CreateFormulaTaskDTO;
 import com.papervision.entity.Formula;
 import com.papervision.entity.Task;
+import com.papervision.entity.User;
 import com.papervision.service.FormulaService;
 import com.papervision.service.UserService;
 import jakarta.validation.Valid;
@@ -18,8 +20,11 @@ import java.util.List;
 public class FormulaController {
     private final FormulaService formulaService;
     private final UserService userService;
-    private Long uid() { return userService.getCurrentUser(
-        SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
+    private Long uid() {
+        User u = userService.getCurrentUser(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (u == null) throw new BusinessException(401, "用户未登录或不存在");
+        return u.getId();
+    }
 
     @GetMapping("/list")
     public Result<List<Formula>> list() {

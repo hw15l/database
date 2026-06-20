@@ -31,14 +31,22 @@
           </el-tab-pane>
           <el-tab-pane label="统计排行">
             <el-table :data="ranking" stripe size="small">
-              <el-table-column prop="taskCountRank" label="排名" width="70" />
+              <el-table-column label="排名" width="70">
+                <template #default="s">{{ s.row.taskCountRank || s.row.task_count_rank || '-' }}</template>
+              </el-table-column>
               <el-table-column prop="username" label="用户名" />
               <el-table-column prop="nickname" label="昵称" />
-              <el-table-column prop="totalTasks" label="总任务" width="90" />
-              <el-table-column prop="successCount" label="成功" width="80" />
-              <el-table-column prop="successRatePct" label="成功率%" width="90" />
-              <el-table-column prop="userTier" label="等级" width="90">
-                <template #default="s"><el-tag size="small">{{ s.row.userTier }}</el-tag></template>
+              <el-table-column label="总任务" width="90">
+                <template #default="s">{{ s.row.totalTasks ?? s.row.total_tasks ?? 0 }}</template>
+              </el-table-column>
+              <el-table-column label="成功" width="80">
+                <template #default="s">{{ s.row.successCount ?? s.row.success_count ?? 0 }}</template>
+              </el-table-column>
+              <el-table-column label="成功率%" width="90">
+                <template #default="s">{{ s.row.successRatePct ?? s.row.success_rate_pct ?? 0 }}</template>
+              </el-table-column>
+              <el-table-column label="等级" width="90">
+                <template #default="s"><el-tag size="small">{{ s.row.userTier || s.row.user_tier || '-' }}</el-tag></template>
               </el-table-column>
             </el-table>
           </el-tab-pane>

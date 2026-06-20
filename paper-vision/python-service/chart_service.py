@@ -785,12 +785,17 @@ CHART_DISPATCH = {
 def render_chart(chart_type, file_path, params):
     """主入口。基于真实上传数据渲染图表，返回 (image_path, base64)。"""
     df = load_data(file_path)
-    dpi = int(params.get('dpi', 300))
+    dpi = min(max(int(params.get('dpi', 300)), 72), 600)
     color = params.get('colorScheme', params.get('color', 'Set2'))
+    if not isinstance(color, str) or not color.replace('_', '').isalnum():
+        color = 'Set2'
     plt.close('all')
 
     if df is None or len(df) == 0:
         raise ValueError('未提供有效数据文件，或文件为空。请先上传含表头的数据文件。')
+
+    if len(df) > 10000:
+        df = df.head(10000)
 
     render_fn = CHART_DISPATCH.get(chart_type)
     if render_fn is None:

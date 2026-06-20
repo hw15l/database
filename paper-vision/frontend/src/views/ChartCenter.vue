@@ -67,11 +67,14 @@ export default {
     }
   },
   async mounted() {
-    const [charts, files] = await Promise.all([chartApi.list(), dataApi.files()])
-    this.charts = charts
-    this.files = files
+    await this.loadLists()
   },
   methods: {
+    async loadLists() {
+      const [charts, files] = await Promise.all([chartApi.list(), dataApi.files()])
+      this.charts = charts || []
+      this.files = files || []
+    },
     async generateBatch() {
       if (this.selectedCharts.length === 0) return this.$message.warning('请至少勾选一种图表')
       if (!this.selectedFile) return this.$message.warning('请选择数据源文件')
@@ -88,6 +91,7 @@ export default {
           this.results.push(item)
         }
         this.$message.success(`完成：${this.results.filter(x => x.status === 'SUCCESS').length}/${this.results.length} 个图表生成成功`)
+        await this.loadLists()
       } catch (e) { /* 拦截器已统一提示 */ }
       this.generating = false
     },

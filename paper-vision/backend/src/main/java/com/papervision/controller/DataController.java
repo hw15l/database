@@ -4,6 +4,7 @@ import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.dto.FileUploadDTO;
 import com.papervision.entity.FileEntity;
+import com.papervision.entity.User;
 import com.papervision.mapper.FileMapper;
 import com.papervision.service.DatabaseService;
 import com.papervision.service.FileService;
@@ -24,8 +25,11 @@ public class DataController {
     private final UserService userService;
     private final DatabaseService databaseService;
     private final FileMapper fileMapper;
-    private Long uid() { return userService.getCurrentUser(
-        SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
+    private Long uid() {
+        User u = userService.getCurrentUser(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (u == null) throw new BusinessException(401, "用户未登录或不存在");
+        return u.getId();
+    }
 
     @PostMapping("/upload")
     public Result<FileEntity> upload(@Valid @RequestBody FileUploadDTO dto) throws Exception {

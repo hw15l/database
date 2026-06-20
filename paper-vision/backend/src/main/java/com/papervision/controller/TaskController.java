@@ -4,6 +4,7 @@ import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.entity.History;
 import com.papervision.entity.Task;
+import com.papervision.entity.User;
 import com.papervision.service.DatabaseService;
 import com.papervision.service.TaskService;
 import com.papervision.service.UserService;
@@ -21,8 +22,11 @@ public class TaskController {
     private final TaskService taskService;
     private final UserService userService;
     private final DatabaseService databaseService;
-    private Long uid() { return userService.getCurrentUser(
-        SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
+    private Long uid() {
+        User u = userService.getCurrentUser(SecurityContextHolder.getContext().getAuthentication().getName());
+        if (u == null) throw new BusinessException(401, "用户未登录或不存在");
+        return u.getId();
+    }
 
     @GetMapping("/list")
     public Result<List<Task>> listTasks() {

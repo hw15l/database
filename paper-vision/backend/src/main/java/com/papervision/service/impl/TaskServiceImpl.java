@@ -7,6 +7,7 @@ import com.papervision.mapper.*;
 import com.papervision.service.TaskService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.Cacheable;
@@ -46,33 +47,25 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskMapper.selectById(taskId);
         if (task == null || task.getResultPath() == null) return null;
         try { return Files.readAllBytes(new File(task.getResultPath()).toPath()); }
-        catch (IOException e) { log.warn("读取结果图片失败: taskId={}, {}", taskId, e.getMessage()); return null; }
+        catch (IOException e) { log.warn("读取结果图片失败: taskId={}, error={}", taskId, e.getMessage()); return null; }
     }
 
-    /**
-     * 软删除历史记录
-     * <p>[DB] trg_history_soft_delete_guard: 自动填充deleted_at时间戳 + rating范围守护(1-5)</p>
-     */
     @Override
     @Transactional
+    @CacheEvict(value = {"stats", "userProfile360"}, allEntries = true)
     public void deleteHistory(Long historyId, Long userId) {
         History h = historyMapper.selectById(historyId);
         if (h == null) throw new BusinessException(404, "记录不存在");
         if (!h.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
-        // [DB] trg_history_soft_delete_guard: is_deleted 0→1 时自动设置 deleted_at = NOW()
         h.setIsDeleted(1);
         historyMapper.updateById(h);
         log.info("用户[{}]软删除历史记录: historyId={}", userId, historyId);
     }
 
-    /**
-     * 系统统计 — 混合使用基础查询 + 数据库视图
-     * <p>[DB] v_trend_analysis_weekly: 窗口函数LAG环比 + SUM OVER累计</p>
-     * <p>[DB] v_hot_items_unified_ranking: UNION ALL合并 + DENSE_RANK排名</p>
-     */
     @Override
     @Cacheable(value = "stats")
     public Map<String, Object> getStats() {
+        log.info("加载系统统计数据(缓存未命中)");
         Map<String, Object> stats = new HashMap<>();
         long totalUsers = userMapper.selectCount(null);
         long totalTasks = taskMapper.selectCount(null);
@@ -86,21 +79,16 @@ public class TaskServiceImpl implements TaskService {
         stats.put("successRate", totalTasks > 0 ? Math.round(successTasks * 1000.0 / totalTasks) / 10.0 : 0);
         stats.put("todayTasks", todayTasks);
         stats.put("avgTasksPerUser", totalUsers > 0 ? Math.round(totalTasks * 10.0 / totalUsers) / 10.0 : 0);
-        // [DB] 视图 v_trend_analysis_weekly + v_hot_items_unified_ranking
         stats.put("weeklyTrend", databaseMapper.getWeeklyTrend(4));
         stats.put("hotItems", databaseMapper.getHotItemsRanking(5));
         return stats;
     }
 
-    /**
-     * 用户排行 — 使用 v_user_profile_360 视图替代手写SQL
-     * <p>[DB] v_user_profile_360: 6表JOIN + RANK()窗口函数 + 用户分层</p>
-     */
     @Override
     @Cacheable(value = "ranking", key = "#topN")
     public Map<String, Object> getUserRanking(int topN) {
+        log.info("加载用户排行(缓存未命中): topN={}", topN);
         Map<String, Object> result = new HashMap<>();
-        // [DB] v_user_profile_360 视图: 窗口函数RANK()排名, 替代手写JOIN+GROUP BY
         result.put("top", databaseMapper.getUserRankingFromView(topN));
         return result;
     }

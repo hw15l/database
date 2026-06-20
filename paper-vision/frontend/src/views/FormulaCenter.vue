@@ -42,7 +42,7 @@
 import { formulaApi, taskApi } from '../api'
 export default {
   data() { return { formulas: [], selectedFormula: null, params: {}, currentSchema: [], generating: false, resultImage: '' } },
-  async mounted() { this.formulas = await formulaApi.list() },
+  async mounted() { this.formulas = (await formulaApi.list()) || [] },
   methods: {
     resetParams() {
       const formula = this.formulas.find(f => f.id === this.selectedFormula)

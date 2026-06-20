@@ -112,17 +112,19 @@ public class DatabaseServiceImpl implements DatabaseService {
     }
 
     @Override
+    @CacheEvict(value = "hotItems", allEntries = true)
     @Transactional
     public void refreshHotItems() {
         databaseMapper.callHotItemsRefresh(10, 7);
-        log.info("热点数据刷新完成");
+        log.info("热点数据刷新完成, hotItems缓存已清除");
     }
 
     @Override
-    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360"}, allEntries = true)
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360",
+            "chartList", "formulaList", "chart", "formula", "categoryTree", "user"}, allEntries = true)
     @Transactional
     public void refreshAllStats() {
         databaseMapper.callHotItemsRefresh(10, 7);
-        log.info("全部统计缓存已清除, 热点数据已刷新");
+        log.info("全部缓存已清除, 热点数据已刷新");
     }
 }

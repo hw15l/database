@@ -62,10 +62,22 @@ public class ChartServiceImpl implements ChartService {
      */
     @Override
     @Transactional
-    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend"}, allEntries = true)
+    @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360"}, allEntries = true)
     public Task createChartTask(Long userId, Long chartId, Long fileId, Map<String, Object> params) {
         Chart chart = chartMapper.selectById(chartId);
         if (chart == null) throw new BusinessException("图表不存在");
+
+        if (params == null) params = new HashMap<>();
+        if (params.size() > 20) throw new BusinessException("参数数量超过限制");
+        Object dpiVal = params.get("dpi");
+        if (dpiVal != null) {
+            int dpi = Integer.parseInt(String.valueOf(dpiVal));
+            if (dpi < 72 || dpi > 600) throw new BusinessException("DPI范围应在72-600之间");
+        }
+        Object colorVal = params.get("colorScheme");
+        if (colorVal != null && !String.valueOf(colorVal).matches("^[a-zA-Z0-9_]+$")) {
+            throw new BusinessException("颜色方案名称非法");
+        }
 
         // [DB] sp_quota_check_and_enforce: 从角色元数据JSON提取每日限额, 超额抛异常
         databaseMapper.callQuotaCheck(userId, "ENFORCE");
