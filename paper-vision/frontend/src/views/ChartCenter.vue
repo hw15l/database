@@ -4,7 +4,7 @@
     <el-row :gutter="20">
       <el-col :span="6">
         <el-card>
-          <template #header>选择图表类型（可多选）</template>
+          <template #header>选择图表类型（可多选）<el-button size="small" text type="primary" @click="loadLists" style="float:right">🔄 刷新</el-button></template>
           <el-checkbox-group v-model="selectedCharts" style="display:flex;flex-direction:column">
             <el-checkbox v-for="c in charts" :key="c.id" :label="c.id" style="margin:4px 0">{{ c.chartName }}</el-checkbox>
           </el-checkbox-group>

@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+MAX_FIGSIZE_W = 16
+MAX_FIGSIZE_H = 12
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
 for _fp in [r'C:\Windows\Fonts\simhei.ttf', r'C:\Windows\Fonts\msyh.ttc',
             '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc']:
     if os.path.exists(_fp):
@@ -110,13 +114,23 @@ def _save_fig(fig, params):
     bg = 'none' if transparent else p.get('bg_color', 'white')
     pad = float(p.get('pad_inches', 0.3))
 
+    w, h = fig.get_size_inches()
+    if w > MAX_FIGSIZE_W or h > MAX_FIGSIZE_H:
+        fig.set_size_inches(min(w, MAX_FIGSIZE_W), min(h, MAX_FIGSIZE_H))
+
     path = _save_path(fmt)
     fig.savefig(path, dpi=dpi, bbox_inches='tight', facecolor=bg,
                 edgecolor='none', pad_inches=pad, format=fmt, transparent=transparent)
     plt.close(fig)
+
+    fsize = os.path.getsize(path)
+    if fsize > MAX_IMAGE_BYTES:
+        os.remove(path)
+        raise ValueError(f'生成的图片过大({fsize // 1024 // 1024}MB), 请降低DPI')
+
     with open(path, 'rb') as f:
         b64 = base64.b64encode(f.read()).decode()
-    logger.info("渲染完成: %s (dpi=%d)", path, dpi)
+    logger.info("渲染完成: %s (dpi=%d, size=%dKB)", path, dpi, fsize // 1024)
     return path, b64
 
 

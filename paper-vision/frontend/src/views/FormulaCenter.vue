@@ -4,7 +4,7 @@
     <el-row :gutter="20">
       <el-col :span="6">
         <el-card>
-          <template #header>选择公式类型</template>
+          <template #header>选择公式类型<el-button size="small" text type="primary" @click="loadFormulas" style="float:right">🔄 刷新</el-button></template>
           <el-radio-group v-model="selectedFormula" style="display:flex;flex-direction:column">
             <el-radio v-for="f in formulas" :key="f.id" :label="f.id" style="margin:5px 0" @change="resetParams">{{ f.formulaName }}</el-radio>
           </el-radio-group>
@@ -42,8 +42,11 @@
 import { formulaApi, taskApi } from '../api'
 export default {
   data() { return { formulas: [], selectedFormula: null, params: {}, currentSchema: [], generating: false, resultImage: '' } },
-  async mounted() { this.formulas = (await formulaApi.list()) || [] },
+  async mounted() { await this.loadFormulas() },
   methods: {
+    async loadFormulas() {
+      this.formulas = (await formulaApi.list()) || []
+    },
     resetParams() {
       const formula = this.formulas.find(f => f.id === this.selectedFormula)
       this.currentSchema = (formula && formula.paramSchema) || []

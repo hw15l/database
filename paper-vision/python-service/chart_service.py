@@ -16,6 +16,10 @@ import seaborn as sns
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
+MAX_FIGSIZE_W = 20
+MAX_FIGSIZE_H = 16
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
 # 注册中文字体（直接按文件路径，Windows 下最可靠）
 _CJK_FONT = None
 for _fp in [r'C:\Windows\Fonts\simhei.ttf', r'C:\Windows\Fonts\msyh.ttc',
@@ -124,10 +128,17 @@ class DataProfile:
 
 def _save(fig, dpi):
     """保存图片，文件名带 UUID 保证唯一。返回 (path, base64)。"""
+    w, h = fig.get_size_inches()
+    if w > MAX_FIGSIZE_W or h > MAX_FIGSIZE_H:
+        fig.set_size_inches(min(w, MAX_FIGSIZE_W), min(h, MAX_FIGSIZE_H))
     name = f'chart_{uuid.uuid4().hex}.png'
     path = os.path.join(OUTPUT_DIR, name)
     fig.savefig(path, dpi=dpi, facecolor='white', edgecolor='none')
     plt.close(fig)
+    fsize = os.path.getsize(path)
+    if fsize > MAX_IMAGE_BYTES:
+        os.remove(path)
+        raise ValueError(f'生成的图片过大({fsize // 1024 // 1024}MB), 请降低DPI或数据量')
     with open(path, 'rb') as f:
         return path, base64.b64encode(f.read()).decode()
 

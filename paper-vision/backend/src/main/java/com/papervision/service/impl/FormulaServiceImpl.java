@@ -1,7 +1,6 @@
 package com.papervision.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.papervision.common.BusinessException;
 import com.papervision.entity.*;
 import com.papervision.mapper.*;
@@ -10,10 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.*;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 import java.util.*;
 
 @Slf4j
@@ -21,9 +18,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FormulaServiceImpl implements FormulaService {
     private final FormulaMapper formulaMapper;
-    private final TaskMapper taskMapper;
-    private final DatabaseMapper databaseMapper;
-    private final RestTemplate restTemplate;
+    private final RenderHelper renderHelper;
 
     @Value("${python.service.url}")
     private String pythonServiceUrl;
@@ -140,11 +135,6 @@ public class FormulaServiceImpl implements FormulaService {
         return f;
     }
 
-    /**
-     * 创建公式渲染任务 — 数据库对象使用同 ChartServiceImpl.createChartTask()
-     * <p>存储过程: sp_quota_check_and_enforce, sp_task_state_transition</p>
-     * <p>触发器: trg_task_before_insert(PENDING+推断), trg_task_after_update(History+usage_count)</p>
-     */
     @Override
     @Transactional
     @CacheEvict(value = {"stats", "ranking", "hotItems", "weeklyTrend", "userProfile360"}, allEntries = true)
@@ -158,48 +148,19 @@ public class FormulaServiceImpl implements FormulaService {
         if (params == null) params = new HashMap<>();
         if (params.size() > 30) throw new BusinessException("参数数量超过限制");
 
-        // [DB] sp_quota_check_and_enforce
-        databaseMapper.callQuotaCheck(userId, "ENFORCE");
         log.info("用户[{}]创建公式任务: formulaId={}", userId, formulaId);
 
-        // INSERT → [DB] trg_task_before_insert: status=PENDING, formula_id一致性校验
         Task task = new Task();
         task.setUserId(userId);
         task.setTaskType("formula");
         task.setFormulaId(formulaId);
-        taskMapper.insert(task);
 
-        // [DB] sp_task_state_transition: PENDING→PROCESSING
-        databaseMapper.callTaskStateTransition(task.getId(), "PROCESSING", null);
+        Map<String, Object> req = new HashMap<>();
+        req.put("formula_type", formula.getFormulaCode());
+        req.put("latex", latex != null ? latex : formula.getLatexTemplate());
+        req.put("params", params);
 
-        try {
-            Map<String, Object> req = new HashMap<>();
-            req.put("formula_type", formula.getFormulaCode());
-            req.put("latex", latex != null ? latex : formula.getLatexTemplate());
-            req.put("params", params != null ? params : new HashMap<>());
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(req, headers);
-            log.info("调用Python渲染服务: formula_type={}", formula.getFormulaCode());
-            ResponseEntity<Map> resp = restTemplate.postForEntity(
-                    pythonServiceUrl + "/render/formula", entity, Map.class);
-
-            if (resp.getBody() != null && "success".equals(resp.getBody().get("status"))) {
-                taskMapper.update(null, new LambdaUpdateWrapper<Task>()
-                        .eq(Task::getId, task.getId())
-                        .set(Task::getResultPath, (String) resp.getBody().get("image_path")));
-                // [DB] sp_task_state_transition: PROCESSING→SUCCESS
-                // [DB] trg_task_after_update: 自动创建History + formula.usage_count+1
-                databaseMapper.callTaskStateTransition(task.getId(), "SUCCESS", null);
-                log.info("公式任务[{}]渲染成功", task.getId());
-            } else {
-                throw new BusinessException("Python服务渲染失败");
-            }
-        } catch (Exception e) {
-            log.warn("公式任务[{}]渲染失败: {}", task.getId(), e.getMessage());
-            // [DB] sp_task_state_transition: PROCESSING→FAILED
-            databaseMapper.callTaskStateTransition(task.getId(), "FAILED", e.getMessage());
-        }
-        return taskMapper.selectById(task.getId());
+        return renderHelper.executeRenderTask(userId, task,
+                pythonServiceUrl + "/render/formula", req);
     }
 }

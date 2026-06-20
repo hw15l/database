@@ -26,9 +26,15 @@ public class FileServiceImpl implements FileService {
     @Value("${file.upload.path}")
     private String uploadPath;
 
+    private static final int MAX_PARSE_ROWS = 50000;
+    private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
+
     @Override
     @Transactional
     public FileEntity uploadFromBytes(byte[] bytes, String originalName, Long userId) throws Exception {
+        if (bytes.length > MAX_FILE_SIZE) {
+            throw new BusinessException("文件大小不能超过50MB");
+        }
         String ext = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
         if (!isValidExtension(ext)) throw new BusinessException("不支持的文件类型: " + ext);
         if (!verifyMagicBytes(bytes, ext)) throw new BusinessException("文件内容与扩展名不匹配");
@@ -89,20 +95,36 @@ public class FileServiceImpl implements FileService {
     }
 
     private List<List<Object>> parseFile(File file, String ext) throws Exception {
+        return parseFile(file, ext, MAX_PARSE_ROWS);
+    }
+
+    private List<List<Object>> parseFile(File file, String ext, int maxRows) throws Exception {
         List<List<Object>> rows = new ArrayList<>();
         if (".csv".equals(ext)) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                 String line;
-                while ((line = br.readLine()) != null) rows.add(Arrays.asList(line.split(",")));
+                while ((line = br.readLine()) != null && rows.size() < maxRows) {
+                    rows.add(Arrays.asList(line.split(",")));
+                }
             }
         } else if (".xlsx".equals(ext) || ".xls".equals(ext)) {
             ExcelReader reader = ExcelUtil.getReader(file);
-            for (Map<String, Object> map : reader.readAll()) rows.add(new ArrayList<>(map.values()));
+            List<Map<String, Object>> all = reader.readAll();
+            int limit = Math.min(all.size(), maxRows);
+            for (int i = 0; i < limit; i++) {
+                rows.add(new ArrayList<>(all.get(i).values()));
+            }
+            reader.close();
         } else {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
                 String line;
-                while ((line = br.readLine()) != null) rows.add(Arrays.asList(line.split("\t")));
+                while ((line = br.readLine()) != null && rows.size() < maxRows) {
+                    rows.add(Arrays.asList(line.split("\t")));
+                }
             }
+        }
+        if (rows.size() >= maxRows) {
+            log.warn("文件行数超过上限({}), 仅解析前{}行: {}", maxRows, maxRows, file.getName());
         }
         return rows;
     }
@@ -119,12 +141,12 @@ public class FileServiceImpl implements FileService {
         FileEntity f = fileMapper.selectById(fileId);
         if (f == null) return Collections.emptyList();
         try {
-            List<List<Object>> all = parseFile(new File(f.getFilePath()), "." + f.getFileType());
+            List<List<Object>> all = parseFile(new File(f.getFilePath()), "." + f.getFileType(), limit);
             List<List<String>> result = new ArrayList<>();
-            for (int i = 0; i < Math.min(limit, all.size()); i++) {
-                List<String> row = new ArrayList<>();
-                for (Object obj : all.get(i)) row.add(String.valueOf(obj));
-                result.add(row);
+            for (List<Object> row : all) {
+                List<String> strRow = new ArrayList<>();
+                for (Object obj : row) strRow.add(String.valueOf(obj));
+                result.add(strRow);
             }
             return result;
         } catch (Exception e) {
