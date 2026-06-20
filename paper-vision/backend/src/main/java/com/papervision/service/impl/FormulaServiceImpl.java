@@ -45,21 +45,29 @@ public class FormulaServiceImpl implements FormulaService {
         return formulaMapper.selectOne(new LambdaQueryWrapper<Formula>().eq(Formula::getFormulaCode, formulaCode));
     }
 
+    /**
+     * 创建公式渲染任务 — 数据库对象使用同 ChartServiceImpl.createChartTask()
+     * <p>存储过程: sp_quota_check_and_enforce, sp_task_state_transition</p>
+     * <p>触发器: trg_task_before_insert(PENDING+推断), trg_task_after_update(History+usage_count)</p>
+     */
     @Override
     @Transactional
     public Task createFormulaTask(Long userId, Long formulaId, String latex, Map<String, Object> params) {
         Formula formula = formulaMapper.selectById(formulaId);
         if (formula == null) throw new BusinessException("公式不存在");
 
+        // [DB] sp_quota_check_and_enforce
         databaseMapper.callQuotaCheck(userId, "ENFORCE");
         log.info("用户[{}]创建公式任务: formulaId={}", userId, formulaId);
 
+        // INSERT → [DB] trg_task_before_insert: status=PENDING, formula_id一致性校验
         Task task = new Task();
         task.setUserId(userId);
         task.setTaskType("formula");
         task.setFormulaId(formulaId);
         taskMapper.insert(task);
 
+        // [DB] sp_task_state_transition: PENDING→PROCESSING
         databaseMapper.callTaskStateTransition(task.getId(), "PROCESSING", null);
 
         try {
@@ -78,6 +86,8 @@ public class FormulaServiceImpl implements FormulaService {
                 taskMapper.update(null, new LambdaUpdateWrapper<Task>()
                         .eq(Task::getId, task.getId())
                         .set(Task::getResultPath, (String) resp.getBody().get("image_path")));
+                // [DB] sp_task_state_transition: PROCESSING→SUCCESS
+                // [DB] trg_task_after_update: 自动创建History + formula.usage_count+1
                 databaseMapper.callTaskStateTransition(task.getId(), "SUCCESS", null);
                 log.info("公式任务[{}]渲染成功", task.getId());
             } else {
@@ -85,6 +95,7 @@ public class FormulaServiceImpl implements FormulaService {
             }
         } catch (Exception e) {
             log.warn("公式任务[{}]渲染失败: {}", task.getId(), e.getMessage());
+            // [DB] sp_task_state_transition: PROCESSING→FAILED
             databaseMapper.callTaskStateTransition(task.getId(), "FAILED", e.getMessage());
         }
         return taskMapper.selectById(task.getId());

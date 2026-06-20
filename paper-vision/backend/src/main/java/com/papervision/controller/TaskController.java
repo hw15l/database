@@ -4,6 +4,7 @@ import com.papervision.common.BusinessException;
 import com.papervision.common.Result;
 import com.papervision.entity.History;
 import com.papervision.entity.Task;
+import com.papervision.service.DatabaseService;
 import com.papervision.service.TaskService;
 import com.papervision.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.http.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/task")
@@ -18,6 +20,7 @@ import java.util.List;
 public class TaskController {
     private final TaskService taskService;
     private final UserService userService;
+    private final DatabaseService databaseService;
     private Long uid() { return userService.getCurrentUser(
         SecurityContextHolder.getContext().getAuthentication().getName()).getId(); }
 
@@ -32,6 +35,12 @@ public class TaskController {
         if (task == null) throw new BusinessException(404, "任务不存在");
         if (!task.getUserId().equals(uid())) throw new BusinessException(403, "无权访问该任务");
         return Result.ok(task);
+    }
+
+    /** 任务详情增强 — [DB] v_task_detail_enhanced视图(6表JOIN+窗口函数+闭包表路径) */
+    @GetMapping("/{taskId}/detail")
+    public Result<Map<String, Object>> getTaskDetail(@PathVariable Long taskId) {
+        return Result.ok(databaseService.getTaskDetailEnhanced(taskId));
     }
 
     @GetMapping("/{taskId}/image")

@@ -49,17 +49,27 @@ public class TaskServiceImpl implements TaskService {
         catch (IOException e) { log.warn("读取结果图片失败: taskId={}, {}", taskId, e.getMessage()); return null; }
     }
 
+    /**
+     * 软删除历史记录
+     * <p>[DB] trg_history_soft_delete_guard: 自动填充deleted_at时间戳 + rating范围守护(1-5)</p>
+     */
     @Override
     @Transactional
     public void deleteHistory(Long historyId, Long userId) {
         History h = historyMapper.selectById(historyId);
         if (h == null) throw new BusinessException(404, "记录不存在");
         if (!h.getUserId().equals(userId)) throw new BusinessException(403, "无权删除");
+        // [DB] trg_history_soft_delete_guard: is_deleted 0→1 时自动设置 deleted_at = NOW()
         h.setIsDeleted(1);
         historyMapper.updateById(h);
         log.info("用户[{}]软删除历史记录: historyId={}", userId, historyId);
     }
 
+    /**
+     * 系统统计 — 混合使用基础查询 + 数据库视图
+     * <p>[DB] v_trend_analysis_weekly: 窗口函数LAG环比 + SUM OVER累计</p>
+     * <p>[DB] v_hot_items_unified_ranking: UNION ALL合并 + DENSE_RANK排名</p>
+     */
     @Override
     @Cacheable(value = "stats")
     public Map<String, Object> getStats() {
@@ -68,15 +78,22 @@ public class TaskServiceImpl implements TaskService {
         stats.put("totalTasks", taskMapper.selectCount(null));
         stats.put("successTasks", taskMapper.selectCount(
                 new LambdaQueryWrapper<Task>().eq(Task::getStatus, "SUCCESS")));
+        // [DB] 视图 v_trend_analysis_weekly: 窗口函数计算周环比增长率
         stats.put("weeklyTrend", databaseMapper.getWeeklyTrend(4));
+        // [DB] 视图 v_hot_items_unified_ranking: 图表/公式统一热度排行
         stats.put("hotItems", databaseMapper.getHotItemsRanking(5));
         return stats;
     }
 
+    /**
+     * 用户排行 — 使用 v_user_profile_360 视图替代手写SQL
+     * <p>[DB] v_user_profile_360: 6表JOIN + RANK()窗口函数 + 用户分层</p>
+     */
     @Override
     public Map<String, Object> getUserRanking(int topN) {
         Map<String, Object> result = new HashMap<>();
-        result.put("top", taskMapper.getUserRanking(topN));
+        // [DB] v_user_profile_360 视图: 窗口函数RANK()排名, 替代手写JOIN+GROUP BY
+        result.put("top", databaseMapper.getUserRankingFromView(topN));
         return result;
     }
 }

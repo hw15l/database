@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,6 +19,7 @@ public class UserController {
     private final UserService userService;
     private final DatabaseService databaseService;
     private String username() { return SecurityContextHolder.getContext().getAuthentication().getName(); }
+    private Long uid() { return userService.getCurrentUser(username()).getId(); }
 
     @GetMapping("/me")
     public Result<User> me() {
@@ -26,16 +28,29 @@ public class UserController {
         return Result.ok(user);
     }
 
+    /** 用户360画像 — [DB] v_user_profile_360: 6表JOIN + RANK/PERCENT_RANK + JSON_ARRAYAGG */
     @GetMapping("/profile360")
     public Result<Map<String, Object>> profile360() {
-        Long userId = userService.getCurrentUser(username()).getId();
-        return Result.ok(databaseService.getUserProfile360(userId));
+        return Result.ok(databaseService.getUserProfile360(uid()));
     }
 
+    /** 配额查询 — [DB] sp_quota_check_and_enforce: JSON_EXTRACT角色元数据 */
     @GetMapping("/quota")
     public Result<Map<String, Object>> quota() {
-        Long userId = userService.getCurrentUser(username()).getId();
-        return Result.ok(databaseService.checkQuota(userId));
+        return Result.ok(databaseService.checkQuota(uid()));
+    }
+
+    /** 智能推荐 — [DB] sp_smart_recommend: 协同过滤(相似用户) + 热门兜底 */
+    @GetMapping("/recommend")
+    public Result<List<Map<String, Object>>> recommend(
+            @RequestParam(defaultValue = "5") int limit) {
+        return Result.ok(databaseService.getSmartRecommendations(uid(), limit));
+    }
+
+    /** 偏好矩阵 — [DB] v_user_preference_matrix: 条件聚合 + JSON_OBJECTAGG分类分布 */
+    @GetMapping("/preference")
+    public Result<Map<String, Object>> preference() {
+        return Result.ok(databaseService.getUserPreference(uid()));
     }
 
     @PutMapping("/profile")
