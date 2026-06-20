@@ -3,6 +3,8 @@ package com.papervision.entity;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @TableName("t_formula")
@@ -28,4 +30,7 @@ public class Formula {
     private Integer latexLength;
     @TableField(insertStrategy = FieldStrategy.NEVER, updateStrategy = FieldStrategy.NEVER)
     private String popularityRank;
+
+    @TableField(exist = false)
+    private List<Map<String, Object>> paramSchema;
 }

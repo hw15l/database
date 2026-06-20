@@ -334,8 +334,8 @@ def register(formula_type, is_matrix=False):
 @register('integral')
 def _b_integral(p, latex):
     """定积分  |  a(下限) b(上限) func(被积函数) var(变量)"""
-    a = _num(p.get('a', 0)); b = _num(p.get('b', 1)); var = p.get('var', 'x')
-    func = p.get('func', 'f(x)')
+    a = _num(p.get('lower_limit', p.get('a', 0))); b = _num(p.get('upper_limit', p.get('b', 1))); var = p.get('var', 'x')
+    func = p.get('function_expr', p.get('func', 'f(x)'))
     fmap = {'sin': rf'\sin {var}', 'cos': rf'\cos {var}', 'tan': rf'\tan {var}',
             'exp': rf'e^{{{var}}}', 'poly': rf'{var}^{{2}}', 'sqrt': rf'\sqrt{{{var}}}',
             'ln': rf'\ln {var}', 'f(x)': f'f({var})'}
@@ -345,7 +345,7 @@ def _b_integral(p, latex):
 @register('double_integral')
 def _b_double_integral(p, latex):
     """二重积分  |  domain(积分域) func(被积函数)"""
-    domain = p.get('domain', 'D'); func = p.get('func', 'f(x,y)')
+    domain = p.get('domain', 'D'); func = p.get('function_expr', p.get('func', 'f(x,y)'))
     return rf'\iint_{{{domain}}} {func}\,dx\,dy', '二重积分'
 
 
@@ -353,14 +353,14 @@ def _b_double_integral(p, latex):
 def _b_sum(p, latex):
     """求和  |  n(上限) start(起始) var(变量) expr(表达式)"""
     n = int(p.get('n', 10)); s = int(p.get('start', 1))
-    var = p.get('var', 'i'); expr = p.get('expr', f'{var}^2')
+    var = p.get('var', 'i'); expr = p.get('function_expr', p.get('expr', f'{var}^2'))
     return rf'\sum_{{{var}={s}}}^{{{n}}} {expr}', '求和公式'
 
 
 @register('multi_sum')
 def _b_multi_sum(p, latex):
     """多重求和  |  n m(上限) expr"""
-    n = int(p.get('n', 4)); m = int(p.get('m', 3)); expr = p.get('expr', 'a_{ij}')
+    n = int(p.get('n', 4)); m = int(p.get('m', 3)); expr = p.get('function_expr', p.get('expr', 'a_{ij}'))
     return rf'\sum_{{i=1}}^{{{n}}}\sum_{{j=1}}^{{{m}}} {expr}', '双重求和'
 
 
@@ -397,7 +397,7 @@ def _b_normal_dist(p, latex):
 @register('bayes')
 def _b_bayes(p, latex):
     """贝叶斯  |  PA PBA PB(概率值) compute(是否代入计算)"""
-    pa = float(p.get('PA', 0.01)); pba = float(p.get('PBA', 0.95)); pb = float(p.get('PB', 0.05))
+    pa = float(p.get('p_a', p.get('PA', 0.01))); pba = float(p.get('p_b_given_a', p.get('PBA', 0.95))); pb = float(p.get('p_b', p.get('PB', 0.05)))
     if p.get('compute', True) and pb > 0:
         pab = pba * pa / pb
         body = rf'P(A|B)=\frac{{{_num(pba)}\cdot{_num(pa)}}}{{{_num(pb)}}}={pab:.4f}'
@@ -423,7 +423,7 @@ def _b_matrix_mul(p, latex):
 @register('polynomial')
 def _b_polynomial(p, latex):
     """多项式  |  a b c(系数) var(变量)"""
-    a = float(p.get('a', 2)); b = float(p.get('b', -3)); c = float(p.get('c', -5))
+    a = float(p.get('coeff_a', p.get('a', 2))); b = float(p.get('coeff_b', p.get('b', -3))); c = float(p.get('coeff_c', p.get('c', -5)))
     var = p.get('var', 'x'); terms = []
     if a != 0: terms.append(rf'{_num(a)}{var}^{{2}}')
     if b != 0:
@@ -438,7 +438,7 @@ def _b_polynomial(p, latex):
 @register('exponential')
 def _b_exponential(p, latex):
     """指数函数  |  a(系数) k/exp(指数) base(底数)"""
-    a = p.get('a', ''); k = _num(p.get('exp', p.get('k', 2))); base = p.get('base', 'e')
+    a = p.get('a', ''); k = _num(p.get('exponent', p.get('exp', p.get('k', 2)))); base = p.get('base', 'e')
     prefix = f'{_num(a)} \\cdot ' if a not in ('', 1, '1') else ''
     if base == 'e':
         return rf'y = {prefix}e^{{{k}x}}', '指数函数'
