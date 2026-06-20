@@ -49,8 +49,10 @@ public interface DatabaseMapper {
     Map<String, Object> getUserProfile360(@Param("userId") Long userId);
 
     /** v_user_profile_360: 用户排行(窗口函数RANK排名, 替代手写JOIN+GROUP BY) */
-    @Select("SELECT user_id, username, nickname, total_tasks, success_count, " +
-            "success_rate_pct, user_tier, task_count_rank " +
+    @Select("SELECT user_id AS userId, username, nickname, " +
+            "total_tasks AS totalTasks, success_count AS successCount, " +
+            "success_rate_pct AS successRatePct, user_tier AS userTier, " +
+            "task_count_rank AS taskCountRank " +
             "FROM v_user_profile_360 ORDER BY task_count_rank LIMIT #{topN}")
     List<Map<String, Object>> getUserRankingFromView(@Param("topN") int topN);
 
@@ -63,8 +65,10 @@ public interface DatabaseMapper {
     Map<String, Object> getDataQuality(@Param("fileId") Long fileId);
 
     /** v_hot_items_unified_ranking: 图表/公式统一排行(UNION ALL+DENSE_RANK双排名) */
-    @Select("SELECT item_type, item_id, item_name, item_code, usage_count, " +
-            "popularity_rank, complexity_level, is_hot, category_name, global_rank, type_rank " +
+    @Select("SELECT item_type AS itemType, item_id AS itemId, item_name AS itemName, " +
+            "item_code AS itemCode, usage_count AS usageCount, popularity_rank AS popularityRank, " +
+            "complexity_level AS complexityLevel, is_hot AS isHot, category_name AS categoryName, " +
+            "global_rank AS globalRank, type_rank AS typeRank " +
             "FROM v_hot_items_unified_ranking ORDER BY global_rank LIMIT #{limit}")
     List<Map<String, Object>> getHotItemsRanking(@Param("limit") Integer limit);
 
