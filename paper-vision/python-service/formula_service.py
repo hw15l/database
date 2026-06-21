@@ -18,6 +18,7 @@ v5→v6 关键改进:
 import os
 import base64
 import uuid
+import re
 import logging
 import numpy as np
 import matplotlib
@@ -99,6 +100,13 @@ def _num(v):
         return str(int(f)) if f == int(f) else f'{f:g}'
     except (TypeError, ValueError):
         return str(v)
+
+
+def _auto_brace(s):
+    """自动为LaTeX上下标添加花括号: x^100 → x^{100}, e^-x → e^{-x}, a_ij → a_{ij}"""
+    s = re.sub(r'(\^|_)(?!\{)([A-Za-z0-9]{2,})', lambda m: m.group(1) + '{' + m.group(2) + '}', s)
+    s = re.sub(r'(\^|_)(?!\{)(-[A-Za-z0-9]+)', lambda m: m.group(1) + '{' + m.group(2) + '}', s)
+    return s
 
 
 def _save_path(fmt='png'):
@@ -270,6 +278,7 @@ def _render_latex(latex_body, subtitle=None, params=None):
         (file_path, base64_string)
     """
     p = _resolve_params(params)
+    latex_body = _auto_brace(latex_body)
     fs = int(p.get('fontsize', 34))
     color = p.get('color', '#000')
     sub_color = p.get('subtitle_color', '#666')
