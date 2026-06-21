@@ -41,18 +41,23 @@ public class FormulaServiceImpl implements FormulaService {
         PARAM_SCHEMAS.put("integral", List.of(
                 field("lower_limit", "下限 a", "number", 0, 0.5),
                 field("upper_limit", "上限 b", "number", 1, 0.5),
-                field("function_expr", "被积函数", "text", null, null, null, null, "sin / cos / exp / poly / f(x)")
+                field("function_expr", "被积函数", "text", null, null, null, null, "x^2 / \\sin x / e^{-x} / 任意LaTeX"),
+                field("var", "积分变量", "text", null, null, null, null, "x")
         ));
         PARAM_SCHEMAS.put("double_integral", List.of(
-                field("function_expr", "被积函数", "text", null, null, null, null, "f(x,y)")
+                field("function_expr", "被积函数", "text", null, null, null, null, "x^2+y^2 / \\sin(xy)"),
+                field("domain", "积分域", "text", null, null, null, null, "D / \\Omega")
         ));
         PARAM_SCHEMAS.put("sum", List.of(
                 field("n", "上限 n", "number", 10, 1, 1, 1000),
-                field("function_expr", "求和表达式", "text", null, null, null, null, "i^2")
+                field("start", "起始值", "number", 1, 1, 0, 100),
+                field("var", "求和变量", "text", null, null, null, null, "i"),
+                field("function_expr", "求和表达式", "text", null, null, null, null, "i^2 / \\frac{1}{i} / 2^i")
         ));
         PARAM_SCHEMAS.put("multi_sum", List.of(
                 field("n", "外层上限 n", "number", 4, 1, 1, 100),
-                field("m", "内层上限 m", "number", 3, 1, 1, 100)
+                field("m", "内层上限 m", "number", 3, 1, 1, 100),
+                field("function_expr", "求和表达式", "text", null, null, null, null, "a_{ij} / i \\cdot j")
         ));
         PARAM_SCHEMAS.put("matrix", List.of(
                 field("row1", "第一行", "text", null, null, null, null, "1 2 3"),
@@ -83,15 +88,24 @@ public class FormulaServiceImpl implements FormulaService {
                 field("p_b_given_a", "P(B|A)", "number", 0.95, 0.01, 0, 1),
                 field("p_b", "P(B)", "number", 0.05, 0.01, 0, 1)
         ));
-        PARAM_SCHEMAS.put("fourier", List.of());
-        PARAM_SCHEMAS.put("matrix_mul", List.of());
+        PARAM_SCHEMAS.put("fourier", List.of(
+                field("func", "函数名", "text", null, null, null, null, "f"),
+                field("var", "时域变量", "text", null, null, null, null, "t"),
+                field("freq_var", "频域变量", "text", null, null, null, null, "\\omega")
+        ));
+        PARAM_SCHEMAS.put("matrix_mul", List.of(
+                field("mat_a", "矩阵A名称", "text", null, null, null, null, "A"),
+                field("mat_b", "矩阵B名称", "text", null, null, null, null, "B"),
+                field("mat_c", "结果矩阵名", "text", null, null, null, null, "C")
+        ));
         PARAM_SCHEMAS.put("polynomial", List.of(
                 field("coeff_a", "二次系数 a", "number", 2, 0.5),
                 field("coeff_b", "一次系数 b", "number", -3, 0.5),
                 field("coeff_c", "常数项 c", "number", -5, 0.5)
         ));
         PARAM_SCHEMAS.put("exponential", List.of(
-                field("exponent", "指数系数", "number", 2, 0.5)
+                field("exponent", "指数系数", "number", 2, 0.5),
+                field("base", "底数", "text", null, null, null, null, "e / 2 / 10")
         ));
         PARAM_SCHEMAS.put("logarithm", List.of(
                 field("base", "底数", "text", null, null, null, null, "e 或数字")

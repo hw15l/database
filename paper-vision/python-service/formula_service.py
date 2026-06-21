@@ -349,19 +349,25 @@ def register(formula_type, is_matrix=False):
 @register('integral')
 def _b_integral(p, latex):
     """定积分  |  a(下限) b(上限) func(被积函数) var(变量)"""
-    a = _num(p.get('lower_limit', p.get('a', 0))); b = _num(p.get('upper_limit', p.get('b', 1))); var = p.get('var', 'x')
+    a = _num(p.get('lower_limit', p.get('a', 0)))
+    b = _num(p.get('upper_limit', p.get('b', 1)))
+    var = p.get('var', 'x')
     func = p.get('function_expr', p.get('func', 'f(x)'))
-    fmap = {'sin': rf'\sin {var}', 'cos': rf'\cos {var}', 'tan': rf'\tan {var}',
-            'exp': rf'e^{{{var}}}', 'poly': rf'{var}^{{2}}', 'sqrt': rf'\sqrt{{{var}}}',
-            'ln': rf'\ln {var}', 'f(x)': f'f({var})'}
-    return rf'\int_{{{a}}}^{{{b}}} {fmap.get(func, func)} \, d{var}', '定积分'
+    shortcuts = {
+        'sin': rf'\sin {var}', 'cos': rf'\cos {var}', 'tan': rf'\tan {var}',
+        'exp': rf'e^{{{var}}}', 'sqrt': rf'\sqrt{{{var}}}', 'ln': rf'\ln {var}',
+        'f(x)': f'f({var})', 'poly': rf'{var}^{{2}}'
+    }
+    display = shortcuts.get(func, func)
+    return rf'\int_{{{a}}}^{{{b}}} {display} \, d{var}', f'定积分  ∫[{a},{b}] {func} d{var}'
 
 
 @register('double_integral')
 def _b_double_integral(p, latex):
     """二重积分  |  domain(积分域) func(被积函数)"""
-    domain = p.get('domain', 'D'); func = p.get('function_expr', p.get('func', 'f(x,y)'))
-    return rf'\iint_{{{domain}}} {func}\,dx\,dy', '二重积分'
+    domain = p.get('domain', 'D')
+    func = p.get('function_expr', p.get('func', 'f(x,y)'))
+    return rf'\iint_{{{domain}}} {func}\,dx\,dy', f'二重积分  域={domain}  f={func}'
 
 
 @register('sum')
@@ -369,14 +375,15 @@ def _b_sum(p, latex):
     """求和  |  n(上限) start(起始) var(变量) expr(表达式)"""
     n = int(p.get('n', 10)); s = int(p.get('start', 1))
     var = p.get('var', 'i'); expr = p.get('function_expr', p.get('expr', f'{var}^2'))
-    return rf'\sum_{{{var}={s}}}^{{{n}}} {expr}', '求和公式'
+    return rf'\sum_{{{var}={s}}}^{{{n}}} {expr}', f'求和  {var}={s}..{n}  表达式={expr}'
 
 
 @register('multi_sum')
 def _b_multi_sum(p, latex):
     """多重求和  |  n m(上限) expr"""
-    n = int(p.get('n', 4)); m = int(p.get('m', 3)); expr = p.get('function_expr', p.get('expr', 'a_{ij}'))
-    return rf'\sum_{{i=1}}^{{{n}}}\sum_{{j=1}}^{{{m}}} {expr}', '双重求和'
+    n = int(p.get('n', 4)); m = int(p.get('m', 3))
+    expr = p.get('function_expr', p.get('expr', 'a_{ij}'))
+    return rf'\sum_{{i=1}}^{{{n}}}\sum_{{j=1}}^{{{m}}} {expr}', f'双重求和  n={n} m={m}  表达式={expr}'
 
 
 @register('partial_diff')
@@ -406,7 +413,7 @@ def _b_normal_dist(p, latex):
     """正态分布  |  mu(均值) sigma(标准差)"""
     mu = _num(p.get('mu', 0)); sigma = _num(p.get('sigma', 1))
     return (rf'f(x)=\frac{{1}}{{{sigma}\sqrt{{2\pi}}}}'
-            rf'e^{{-\frac{{(x-{mu})^2}}{{2\cdot{sigma}^2}}}}'), '正态分布'
+            rf'e^{{-\frac{{(x-{mu})^2}}{{2\cdot{sigma}^2}}}}'), f'正态分布  μ={mu}  σ={sigma}'
 
 
 @register('bayes')
@@ -418,7 +425,7 @@ def _b_bayes(p, latex):
         body = rf'P(A|B)=\frac{{{_num(pba)}\cdot{_num(pa)}}}{{{_num(pb)}}}={pab:.4f}'
     else:
         body = r'P(A|B)=\frac{P(B|A)\cdot P(A)}{P(B)}'
-    return body, '贝叶斯公式'
+    return body, f'贝叶斯  P(A)={_num(pa)} P(B|A)={_num(pba)} P(B)={_num(pb)}'
 
 
 @register('fourier')
