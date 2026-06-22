@@ -18,21 +18,71 @@
         </el-dropdown>
       </div>
     </el-header>
-    <el-main><router-view /></el-main>
+    <el-main>
+      <div v-if="verifying" style="text-align:center;padding:120px 0;color:#909399">
+        <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+        <p style="margin-top:12px">验证登录状态...</p>
+      </div>
+      <router-view v-else />
+    </el-main>
   </el-container>
 </template>
 
 <script>
+import { user } from './api'
 export default {
   data() {
-    return { loggedIn: false, currentUsername: '', adminFlag: false }
+    return { loggedIn: false, currentUsername: '', adminFlag: false, verifying: true }
   },
-  created() { this.syncAuth() },
+  async created() {
+    await this.verifyAuth()
+  },
   watch: {
-    '$route'() { this.syncAuth() }
+    '$route'() { this.syncLocal() }
   },
   methods: {
-    syncAuth() {
+    async verifyAuth() {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        this.clearAuth()
+        this.verifying = false
+        return
+      }
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          this.clearAuth()
+          this.verifying = false
+          return
+        }
+      } catch (e) {
+        this.clearAuth()
+        this.verifying = false
+        return
+      }
+      try {
+        const me = await user.me()
+        if (me && me.username) {
+          this.loggedIn = true
+          this.currentUsername = me.nickname || me.username
+          localStorage.setItem('username', me.username)
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          this.adminFlag = !!(payload.roles && payload.roles.includes('ROLE_ADMIN'))
+        } else {
+          this.clearAuth()
+          if (this.$route.path !== '/login' && this.$route.path !== '/register') {
+            this.$router.replace('/login')
+          }
+        }
+      } catch (e) {
+        this.clearAuth()
+        if (this.$route.path !== '/login' && this.$route.path !== '/register') {
+          this.$router.replace('/login')
+        }
+      }
+      this.verifying = false
+    },
+    syncLocal() {
       const token = localStorage.getItem('token')
       if (!token) {
         this.loggedIn = false
@@ -43,26 +93,24 @@ export default {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]))
         if (payload.exp && payload.exp * 1000 < Date.now()) {
-          localStorage.clear()
-          this.loggedIn = false
-          this.currentUsername = ''
-          this.adminFlag = false
+          this.clearAuth()
           return
         }
         this.loggedIn = true
         this.currentUsername = localStorage.getItem('username') || payload.sub || '用户'
         this.adminFlag = !!(payload.roles && payload.roles.includes('ROLE_ADMIN'))
       } catch (e) {
-        this.loggedIn = false
-        this.currentUsername = ''
-        this.adminFlag = false
+        this.clearAuth()
       }
     },
-    logout() {
+    clearAuth() {
       localStorage.clear()
       this.loggedIn = false
       this.currentUsername = ''
       this.adminFlag = false
+    },
+    logout() {
+      this.clearAuth()
       this.$router.push('/login')
     }
   }
