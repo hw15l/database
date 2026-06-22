@@ -32,14 +32,43 @@ api.interceptors.response.use(
 )
 
 export const auth = { login: d => api.post('/auth/login', d), register: d => api.post('/auth/register', d) }
-export const user = { me: () => api.get('/user/me'), update: d => api.put('/user/profile', d), changePwd: d => api.put('/user/password', d) }
+export const user = {
+  me: () => api.get('/user/me'),
+  update: d => api.put('/user/profile', d),
+  changePwd: d => api.put('/user/password', d),
+  profile360: () => api.get('/user/profile360'),
+  quota: () => api.get('/user/quota'),
+  recommend: (n = 5) => api.get(`/user/recommend?limit=${n}`),
+  preference: () => api.get('/user/preference')
+}
 export const dataApi = {
   upload: (fileName, fileData) => api.post('/data/upload', { fileName, fileData }),
-  files: () => api.get('/data/files'), preview: id => api.get(`/data/preview/${id}`), del: id => api.delete(`/data/${id}`)
+  files: () => api.get('/data/files'),
+  preview: id => api.get(`/data/preview/${id}`),
+  del: id => api.delete(`/data/${id}`),
+  audit: id => api.post(`/data/${id}/audit`)
 }
-export const chartApi = { list: () => api.get('/chart/list'), byCat: id => api.get(`/chart/category/${id}`), generate: d => api.post('/chart/generate', d), generateBatch: d => api.post('/chart/generate-batch', d) }
-export const formulaApi = { list: () => api.get('/formula/list'), byCat: id => api.get(`/formula/category/${id}`), generate: d => api.post('/formula/generate', d) }
-export const taskApi = { list: () => api.get('/task/list'), get: id => api.get(`/task/${id}`), image: id => api.get(`/task/${id}/image`, { responseType: 'blob' }), history: () => api.get('/task/history'), delHistory: id => api.delete(`/task/history/${id}`) }
+export const chartApi = {
+  list: () => api.get('/chart/list'),
+  byCat: id => api.get(`/chart/category/${id}`),
+  generate: d => api.post('/chart/generate', d),
+  generateBatch: d => api.post('/chart/generate-batch', d)
+}
+export const formulaApi = {
+  list: () => api.get('/formula/list'),
+  byCat: id => api.get(`/formula/category/${id}`),
+  generate: d => api.post('/formula/generate', d)
+}
+export const taskApi = {
+  list: () => api.get('/task/list'),
+  get: id => api.get(`/task/${id}`),
+  detail: id => api.get(`/task/${id}/detail`),
+  image: id => api.get(`/task/${id}/image`, { responseType: 'blob' }),
+  history: () => api.get('/task/history'),
+  delHistory: id => api.delete(`/task/history/${id}`),
+  rateHistory: (id, rating) => api.put(`/task/history/${id}/rating?rating=${rating}`),
+  toggleFavorite: id => api.put(`/task/history/${id}/favorite`)
+}
 export const adminApi = {
   stats: () => api.get('/admin/stats'),
   ranking: n => api.get(`/admin/ranking?topN=${n}`),
@@ -48,5 +77,6 @@ export const adminApi = {
   refreshAll: () => api.post('/admin/refresh-all'),
   hotItems: (n = 20) => api.get(`/admin/hot-items?limit=${n}`),
   trend: (w = 12) => api.get(`/admin/trend?weeks=${w}`),
-  categoryTree: (t = 'chart') => api.get(`/admin/category-tree?type=${t}`)
+  categoryTree: (t = 'chart') => api.get(`/admin/category-tree?type=${t}`),
+  activity: (uid, n = 50) => api.get(`/admin/activity?userId=${uid}&limit=${n}`)
 }

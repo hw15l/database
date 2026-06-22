@@ -63,6 +63,26 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
+    public void rateHistory(Long historyId, Long userId, Integer rating) {
+        History h = historyMapper.selectById(historyId);
+        if (h == null) throw new BusinessException(404, "记录不存在");
+        if (!h.getUserId().equals(userId)) throw new BusinessException(403, "无权操作");
+        h.setRating(rating);
+        historyMapper.updateById(h);
+    }
+
+    @Override
+    @Transactional
+    public void toggleFavorite(Long historyId, Long userId) {
+        History h = historyMapper.selectById(historyId);
+        if (h == null) throw new BusinessException(404, "记录不存在");
+        if (!h.getUserId().equals(userId)) throw new BusinessException(403, "无权操作");
+        h.setIsFavorite(h.getIsFavorite() != null && h.getIsFavorite() == 1 ? 0 : 1);
+        historyMapper.updateById(h);
+    }
+
+    @Override
     @Cacheable(value = "stats")
     public Map<String, Object> getStats() {
         log.info("加载系统统计数据(缓存未命中)");

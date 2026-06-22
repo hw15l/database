@@ -155,6 +155,34 @@
               </el-table-column>
             </el-table>
           </el-tab-pane>
+
+          <!-- Tab 6: 活动审计 -->
+          <el-tab-pane label="活动审计" name="activity">
+            <el-form inline size="small" style="margin-bottom:12px">
+              <el-form-item label="用户ID">
+                <el-input-number v-model="activityUserId" :min="1" style="width:120px" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" @click="loadActivity">查询</el-button>
+              </el-form-item>
+            </el-form>
+            <el-table :data="activityList" stripe size="small">
+              <el-table-column label="时间" width="170">
+                <template #default="s">{{ s.row.activity_time }}</template>
+              </el-table-column>
+              <el-table-column label="类型" width="130">
+                <template #default="s">
+                  <el-tag :type="actTypeColor(s.row.activity_type)" size="small">{{ s.row.activity_type }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="用户" width="100">
+                <template #default="s">{{ s.row.username }}</template>
+              </el-table-column>
+              <el-table-column label="详情">
+                <template #default="s">{{ formatDetail(s.row.activity_detail) }}</template>
+              </el-table-column>
+            </el-table>
+          </el-tab-pane>
         </el-tabs>
       </el-col>
     </el-row>
@@ -166,6 +194,7 @@ export default {
   data() {
     return {
       stats: {}, users: [], ranking: [], hotItems: [], trend: [], categoryTree: [],
+      activityList: [], activityUserId: 1,
       activeTab: 'users', catType: 'chart', refreshing: false
     }
   },
@@ -209,6 +238,24 @@ export default {
     formatDate(d) {
       if (!d) return '-'
       return String(d).substring(0, 10)
+    },
+    async loadActivity() {
+      try { this.activityList = (await adminApi.activity(this.activityUserId, 50)) || [] } catch (e) {}
+    },
+    actTypeColor(t) {
+      if (!t) return 'info'
+      if (t.includes('SUCCESS')) return 'success'
+      if (t.includes('FAILED')) return 'danger'
+      if (t.includes('FILE')) return 'primary'
+      if (t.includes('DELETE')) return 'warning'
+      return 'info'
+    },
+    formatDetail(d) {
+      if (!d) return '-'
+      try {
+        const obj = typeof d === 'string' ? JSON.parse(d) : d
+        return Object.entries(obj).filter(([,v]) => v).map(([k,v]) => k + '=' + v).join(', ')
+      } catch (e) { return String(d).substring(0, 80) }
     }
   }
 }

@@ -13,9 +13,10 @@
       <el-table-column label="大小" width="90"><template #default="s">{{ ((s.row.fileSize||0)/1024).toFixed(1) }} KB</template></el-table-column>
       <el-table-column prop="totalRows" label="行数" width="70" />
       <el-table-column prop="totalCols" label="列数" width="70" />
-      <el-table-column label="操作" width="280">
+      <el-table-column label="操作" width="320">
         <template #default="s">
           <el-button size="small" @click="preview(s.row)">预览</el-button>
+          <el-button size="small" type="success" @click="audit(s.row)" :loading="s.row._auditing">质量审计</el-button>
           <el-button size="small" type="danger" @click="del(s.row)">删除</el-button>
           <el-button size="small" type="info" @click="showFormatHelp">格式说明</el-button>
         </template>
@@ -70,6 +71,22 @@
         </div>
       </template>
     </el-dialog>
+    <el-dialog v-model="auditVisible" title="📊 数据质量审计报告" width="600px">
+      <template v-if="auditResult">
+        <el-descriptions :column="2" border size="small">
+          <el-descriptions-item label="文件名">{{ auditResult.file_name || auditResult.fileName }}</el-descriptions-item>
+          <el-descriptions-item label="类型">{{ auditResult.file_type || auditResult.fileType }}</el-descriptions-item>
+          <el-descriptions-item label="大小">{{ auditResult.file_size_mb || auditResult.fileSizeMb }} MB</el-descriptions-item>
+          <el-descriptions-item label="单元格数">{{ auditResult.cell_count || auditResult.cellCount }}</el-descriptions-item>
+          <el-descriptions-item label="空值率">{{ auditResult.null_rate_pct || auditResult.nullRatePct || 0 }}%</el-descriptions-item>
+          <el-descriptions-item label="质量等级">
+            <el-tag :type="gradeType(auditResult.quality_grade||auditResult.qualityGrade)" size="small">
+              {{ auditResult.quality_grade || auditResult.qualityGrade || '-' }}
+            </el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+      </template>
+    </el-dialog>
   </div>
 </template>
 <script>
@@ -77,7 +94,8 @@ import { dataApi } from '../api'
 export default {
   data() {
     return {
-      files: [], previewVisible: false, previewData: [], previewHeaders: [], helpVisible: false, dontShowAgain: false,
+      files: [], previewVisible: false, previewData: [], previewHeaders: [],
+      helpVisible: false, dontShowAgain: false, auditVisible: false, auditResult: null,
       formatTable: [
         { ext:'.csv', name:'逗号分隔文件', verify:'首字节 < 0x80', parser:'Pandas CSV' },
         { ext:'.xlsx', name:'Excel 2007+', verify:'50 4B (PK/ZIP)', parser:'Apache POI' },
@@ -114,6 +132,22 @@ export default {
     async del(row) {
       try { await this.$confirm('确定删除 ' + row.fileName + ' ?', '确认', { type: 'warning' }) } catch { return }
       await dataApi.del(row.id); this.$message.success('已删除'); await this.loadFiles()
+    },
+    async audit(row) {
+      row._auditing = true
+      try {
+        this.auditResult = await dataApi.audit(row.id)
+        this.auditVisible = true
+        this.$message.success('审计完成')
+      } catch (e) { /* */ }
+      row._auditing = false
+    },
+    gradeType(g) {
+      if (!g) return 'info'
+      if (g.startsWith('A')) return 'success'
+      if (g.startsWith('B')) return 'primary'
+      if (g.startsWith('C')) return 'warning'
+      return 'danger'
     }
   }
 }

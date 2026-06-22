@@ -77,4 +77,16 @@ public class TaskController {
         taskService.deleteHistory(historyId, uid());
         return Result.ok();
     }
+
+    @PutMapping("/history/{historyId}/rating")
+    public Result<Void> rateHistory(@PathVariable Long historyId, @RequestParam Integer rating) {
+        taskService.rateHistory(historyId, uid(), rating);
+        return Result.ok();
+    }
+
+    @PutMapping("/history/{historyId}/favorite")
+    public Result<Void> toggleFavorite(@PathVariable Long historyId) {
+        taskService.toggleFavorite(historyId, uid());
+        return Result.ok();
+    }
 }

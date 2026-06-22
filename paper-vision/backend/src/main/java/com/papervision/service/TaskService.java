@@ -28,7 +28,10 @@ public interface TaskService {
      */
     void deleteHistory(Long historyId, Long userId);
 
-    /** 获取系统统计数据(带缓存), 含周趋势和热门排行 */
+    void rateHistory(Long historyId, Long userId, Integer rating);
+
+    void toggleFavorite(Long historyId, Long userId);
+
     Map<String, Object> getStats();
 
     /** 获取用户排行榜(Top N) */

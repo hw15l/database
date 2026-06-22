@@ -23,6 +23,12 @@
         <el-button type="primary" @click="generateBatch" style="width:100%;margin-top:16px" :loading="generating">
           🎨 生成 {{ selectedCharts.length }} 个图表
         </el-button>
+        <el-card v-if="recommendations.length > 0" header="💡 智能推荐" style="margin-top:16px">
+          <div v-for="r in recommendations" :key="r.item_id||r.itemId" style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px">
+            <span>{{ r.item_name||r.itemName }}</span>
+            <el-tag size="small" type="info">{{ r.reason||'推荐' }}</el-tag>
+          </div>
+        </el-card>
       </el-col>
       <el-col :span="18">
         <el-card>
@@ -56,18 +62,19 @@
   </div>
 </template>
 <script>
-import { chartApi, dataApi, taskApi } from '../api'
+import { chartApi, dataApi, taskApi, user } from '../api'
 export default {
   data() {
     return {
       charts: [], files: [], selectedCharts: [], selectedFile: null,
       colorScheme: 'Set2', dpi: 300, generating: false,
-      results: [], showFull: false, zoomImage: '',
+      results: [], showFull: false, zoomImage: '', recommendations: [],
       colors: ['Set2','Set3','Blues','viridis','plasma','coolwarm','tab10','tab20','Pastel1','Pastel2']
     }
   },
   async mounted() {
     await this.loadLists()
+    try { this.recommendations = (await user.recommend(5)) || [] } catch (e) {}
   },
   methods: {
     async loadLists() {
