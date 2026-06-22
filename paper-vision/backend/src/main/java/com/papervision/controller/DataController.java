@@ -60,6 +60,7 @@ public class DataController {
         FileEntity f = fileMapper.selectById(fileId);
         if (f == null) throw new BusinessException(404, "文件不存在");
         if (!f.getUserId().equals(uid())) throw new BusinessException(403, "无权操作该文件");
+        fileService.ensureDataItems(fileId);
         databaseService.runDataQualityAudit(fileId);
         return Result.ok(databaseService.getDataQualityDashboard(fileId));
     }

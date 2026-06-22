@@ -23,4 +23,6 @@ public interface FileService {
 
     /** 软删除文件(设status=0, 同时物理删除文件) */
     void delete(Long fileId, Long userId);
+
+    void ensureDataItems(Long fileId);
 }

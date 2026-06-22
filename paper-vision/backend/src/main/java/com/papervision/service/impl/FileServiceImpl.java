@@ -5,7 +5,9 @@ import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.papervision.common.BusinessException;
+import com.papervision.entity.DataItem;
 import com.papervision.entity.FileEntity;
+import com.papervision.mapper.DataItemMapper;
 import com.papervision.mapper.FileMapper;
 import com.papervision.service.FileService;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +26,13 @@ import java.util.*;
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
     private final FileMapper fileMapper;
+    private final DataItemMapper dataItemMapper;
     @Value("${file.upload.path}")
     private String uploadPath;
 
     private static final int MAX_PARSE_ROWS = 50000;
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024;
+    private static final int MAX_AUDIT_ROWS = 500;
 
     @Override
     @Transactional
@@ -53,6 +57,7 @@ public class FileServiceImpl implements FileService {
         List<List<Object>> rows = parseFile(dest, ext);
         file.setTotalRows(rows.size()); file.setTotalCols(rows.isEmpty() ? 0 : rows.get(0).size());
         fileMapper.insert(file);
+        populateDataItems(file.getId(), rows);
         log.info("用户[{}]上传文件: {} ({}KB)", userId, originalName, bytes.length / 1024);
         return file;
     }
@@ -80,6 +85,7 @@ public class FileServiceImpl implements FileService {
         List<List<Object>> rows = parseFile(dest, ext);
         file.setTotalRows(rows.size()); file.setTotalCols(rows.isEmpty() ? 0 : rows.get(0).size());
         fileMapper.insert(file);
+        populateDataItems(file.getId(), rows);
         log.info("用户[{}]上传文件: {} ({}KB)", userId, originalName, mf.getSize() / 1024);
         return file;
     }
@@ -130,6 +136,49 @@ public class FileServiceImpl implements FileService {
             log.warn("文件行数超过上限({}), 仅解析前{}行: {}", maxRows, maxRows, file.getName());
         }
         return rows;
+    }
+
+    private void populateDataItems(Long fileId, List<List<Object>> rows) {
+        if (rows == null || rows.size() < 2) return;
+        List<Object> headers = rows.get(0);
+        int limit = Math.min(rows.size(), MAX_AUDIT_ROWS + 1);
+        for (int i = 1; i < limit; i++) {
+            List<Object> row = rows.get(i);
+            for (int j = 0; j < Math.min(row.size(), headers.size()); j++) {
+                String val = row.get(j) != null ? String.valueOf(row.get(j)).trim() : null;
+                DataItem item = new DataItem();
+                item.setFileId(fileId);
+                item.setRowIndex(i);
+                item.setColName(String.valueOf(headers.get(j)));
+                item.setColValue(val);
+                item.setDataType(detectType(val));
+                dataItemMapper.insert(item);
+            }
+        }
+        log.info("文件[{}]数据入库: {}行 x {}列", fileId, limit - 1, headers.size());
+    }
+
+    private String detectType(String val) {
+        if (val == null || val.isEmpty()) return "empty";
+        try { Double.parseDouble(val); return "number"; } catch (NumberFormatException ignored) {}
+        if (val.matches("\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}.*")) return "date";
+        return "text";
+    }
+
+    @Override
+    @Transactional
+    public void ensureDataItems(Long fileId) {
+        long count = dataItemMapper.selectCount(
+                new LambdaQueryWrapper<DataItem>().eq(DataItem::getFileId, fileId));
+        if (count > 0) return;
+        FileEntity f = fileMapper.selectById(fileId);
+        if (f == null || f.getFilePath() == null) return;
+        try {
+            List<List<Object>> rows = parseFile(new File(f.getFilePath()), "." + f.getFileType());
+            populateDataItems(fileId, rows);
+        } catch (Exception e) {
+            log.warn("自动填充数据项失败: fileId={}, {}", fileId, e.getMessage());
+        }
     }
 
     @Override
